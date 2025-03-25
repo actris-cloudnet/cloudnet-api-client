@@ -1,13 +1,17 @@
-# Ceilopyter
+# cloudnet-api-client
 
-Python package for reading ceilometer data.
+Python package for using Cloudnet API
 
-## Supported ceilometers
+## Quickstart
 
-- Campbell Scientific CS135
-- Vaisala CL31
-- Vaisala CL51
-- Vaisala CT25K
+```python
+import cloudnet_api_client as cac
+client = cac.APIClient()
+sites = client.sites(type="cloudnet")
+products = client.products()
+metadata = client.metadata("hyytiala", "2021-01-01", product=["mwr", "radar"])
+cac.download(metadata, "data")
+```
 
 ## License
 
