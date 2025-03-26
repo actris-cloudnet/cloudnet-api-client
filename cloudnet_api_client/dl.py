@@ -29,15 +29,33 @@ async def _download_files(
                 logging.info(f"Already downloaded: {destination}")
                 continue
             task = asyncio.create_task(
-                _download_file(session, meta.download_url, destination, semaphore)
+                _download_file_with_retries(
+                    session, meta.download_url, destination, semaphore
+                )
             )
             tasks.append(task)
         await asyncio.gather(*tasks)
 
 
-def _file_checksum_matches(meta: Metadata, destination: Path) -> bool:
-    fun = utils.md5sum if isinstance(meta, RawMetadata) else utils.sha256sum
-    return fun(destination) == meta.checksum
+async def _download_file_with_retries(
+    session: aiohttp.ClientSession,
+    url: str,
+    destination: Path,
+    semaphore: asyncio.Semaphore,
+    max_retries: int = 3,
+) -> None:
+    """Attempt to download a file, retrying up to max_retries times if needed."""
+    for attempt in range(1, max_retries + 1):
+        try:
+            await _download_file(session, url, destination, semaphore)
+            return  # Success, exit the retry loop.
+        except Exception as e:
+            logging.warning(f"Attempt {attempt} failed for {url}: {e}")
+            if attempt == max_retries:
+                logging.error(f"Giving up on {url} after {max_retries} attempts.")
+            else:
+                # Exponential backoff before retrying
+                await asyncio.sleep(2**attempt)
 
 
 async def _download_file(
@@ -56,3 +74,8 @@ async def _download_file(
                         break
                     file_out.write(chunk)
         logging.info(f"Downloaded: {destination}")
+
+
+def _file_checksum_matches(meta: Metadata, destination: Path) -> bool:
+    fun = utils.md5sum if isinstance(meta, RawMetadata) else utils.sha256sum
+    return fun(destination) == meta.checksum
