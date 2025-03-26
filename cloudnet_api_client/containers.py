@@ -60,6 +60,7 @@ class Metadata:
 class RawMetadata(Metadata):
     status: Literal["created", "uploaded", "processed", "invalid"]
     instrument: Instrument
+    tags: list[str]
 
 
 @dataclass(frozen=True, slots=True)

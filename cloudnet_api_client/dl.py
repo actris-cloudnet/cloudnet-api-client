@@ -48,7 +48,7 @@ async def _download_file_with_retries(
     for attempt in range(1, max_retries + 1):
         try:
             await _download_file(session, url, destination, semaphore)
-            return  # Success, exit the retry loop.
+            return
         except Exception as e:
             logging.warning(f"Attempt {attempt} failed for {url}: {e}")
             if attempt == max_retries:
