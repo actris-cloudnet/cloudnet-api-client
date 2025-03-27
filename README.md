@@ -4,7 +4,7 @@
 
 Official Python package for using Cloudnet API
 
-# Installation
+## Installation
 
 ```bash
 python3 -m pip install cloudnet-api-client
