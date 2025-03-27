@@ -102,6 +102,10 @@ Parameters:
 | ---- | ---------------- | ----------------------------------------- | ------- |
 | type | `str` or `[str]` | "instrument", "geophysical", "evaluation" | `None`  |
 
+### `APIClient().instruments()` &rarr; `[Instrument]`
+
+Fetch cloudnet instruments.
+
 ### `cloudnet_api_client.download([Metadata])`
 
 Download files from the fetched metadata.

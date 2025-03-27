@@ -50,6 +50,22 @@ class APIClient:
             data = [obj for obj in data if any(t in obj.type for t in type)]
         return data
 
+    def instruments(self) -> list[Instrument]:
+        res = self._get_response("instrument-pids")
+        return [
+            Instrument(
+                instrument_id=obj["instrument"]["id"],
+                model=obj["model"],
+                type=obj["type"],
+                uuid=obj["uuid"],
+                pid=obj["pid"],
+                owners=obj["owners"],
+                serial_number=obj["serialNumber"],
+                name=obj["name"],
+            )
+            for obj in res
+        ]
+
     def metadata(
         self,
         site_id: str,
