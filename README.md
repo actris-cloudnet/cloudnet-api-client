@@ -2,7 +2,7 @@
 
 # cloudnet-api-client
 
-Official Python package for using Cloudnet API
+Official Python client for the [Cloudnet data portal API](https://docs.cloudnet.fmi.fi/api/data-portal.html).
 
 ## Installation
 
@@ -21,10 +21,10 @@ sites = client.sites(type="cloudnet")
 products = client.products()
 
 metadata = client.metadata("hyytiala", "2021-01-01", product=["mwr", "radar"])
-cac.download(metadata, "data")
+cac.download(metadata, "data/")
 
-raw_metadata = client.metadata("hyytiala", "2021-01-01")
-cac.download(raw_metadata, "data_raw")
+raw_metadata = client.raw_metadata("granada", date="2024-01", instrument_id="parsivel")
+cac.download(raw_metadata, "data_raw/")
 ```
 
 ## Documentation
@@ -81,7 +81,7 @@ Parameters:
 
 ### `APIClient().sites()` &rarr; `[Site]`
 
-List cloudnet sites.
+Fetch cloudnet sites.
 
 Parameters:
 
@@ -91,7 +91,7 @@ Parameters:
 
 ### `APIClient().products()` &rarr; `[Product]`
 
-List cloudnet products.
+Fetch cloudnet products.
 
 Parameters:
 
@@ -108,7 +108,7 @@ Parameters:
 | name              | type                                   | default |
 | ----------------- | -------------------------------------- | ------- |
 | metadata          | `[RawMetadata]` or `[ProductMetadata]` |         |
-| output_directory  | `PathLike`                             |         |
+| output_directory  | `PathLike` or `str`                    |         |
 | concurrency_limit | `int`                                  | 5       |
 
 ## License
