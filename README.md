@@ -79,9 +79,29 @@ Parameters:
 | include_tag_subset | `{str}`                                | `None`  |
 | exclude_tag_subset | `{str}`                                | `None`  |
 
+### `APIClient().sites()` &rarr; `[Site]`
+
+List cloudnet sites.
+
+Parameters:
+
+| name | type             | Choices                                   | default |
+| ---- | ---------------- | ----------------------------------------- | ------- |
+| type | `str` or `[str]` | "cloudnet", "campaign", "model", "hidden" | `None`  |
+
+### `APIClient().products()` &rarr; `[Product]`
+
+List cloudnet products.
+
+Parameters:
+
+| name | type             | Choices                                   | default |
+| ---- | ---------------- | ----------------------------------------- | ------- |
+| type | `str` or `[str]` | "instrument", "geophysical", "evaluation" | `None`  |
+
 ### `cloudnet_api_client.download([Metadata])`
 
-Function to download files from fetched metadata.
+Download files from the fetched metadata.
 
 Parameters:
 
