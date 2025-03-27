@@ -1,3 +1,5 @@
+[![CI](https://github.com/actris-cloudnet/cloudnet-api-client/actions/workflows/test.yml/badge.svg)](https://github.com/actris-cloudnet/cloudnet-api-client/actions/workflows/test.yml)
+
 # cloudnet-api-client
 
 Official Python package for using Cloudnet API
