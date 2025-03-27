@@ -56,6 +56,8 @@ class APIClient:
         date: DateParam = None,
         date_from: DateParam = None,
         date_to: DateParam = None,
+        updated_at_from: DateParam = None,
+        updated_at_to: DateParam = None,
         instrument_id: QueryParam = None,
         instrument_pid: QueryParam = None,
         product: QueryParam = None,
@@ -68,7 +70,9 @@ class APIClient:
             "product": product,
             "showLegacy": show_legacy,
         }
-        date_params = self._mangle_dates(date, date_from, date_to)
+        date_params = self._mangle_dates(
+            date, date_from, date_to, updated_at_from, updated_at_to
+        )
         params.update(date_params)
         res = self._get_response("files", params)
         return _build_objects(res, ProductMetadata)
@@ -79,6 +83,8 @@ class APIClient:
         date: DateParam = None,
         date_from: DateParam = None,
         date_to: DateParam = None,
+        updated_at_from: DateParam = None,
+        updated_at_to: DateParam = None,
         instrument_id: QueryParam = None,
         instrument_pid: QueryParam = None,
     ) -> list[RawMetadata]:
@@ -87,7 +93,9 @@ class APIClient:
             "instrument": instrument_id,
             "instrumentPid": instrument_pid,
         }
-        date_params = self._mangle_dates(date, date_from, date_to)
+        date_params = self._mangle_dates(
+            date, date_from, date_to, updated_at_from, updated_at_to
+        )
         params.update(date_params)
         res = self._get_response("raw-files", params)
         return _build_raw_meta_objects(res)
@@ -139,10 +147,17 @@ class APIClient:
         return res.json()
 
     def _mangle_dates(
-        self, date: DateParam, date_from: DateParam, date_to: DateParam
+        self,
+        date: DateParam,
+        date_from: DateParam,
+        date_to: DateParam,
+        updated_at_from: DateParam,
+        updated_at_to: DateParam,
     ) -> dict:
         params = {}
-        if isinstance(date, str):
+        if isinstance(date, datetime.date):
+            params["date"] = date
+        elif isinstance(date, str):
             if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
                 params["date"] = self._parse_date(date)
             elif re.fullmatch(r"\d{4}-\d{2}", date):
@@ -155,13 +170,15 @@ class APIClient:
                 params["dateTo"] = datetime.date(int(date), 12, 31)
             else:
                 raise ValueError("Invalid date format")
-        elif isinstance(date, datetime.date):
-            params["date"] = date
         else:
             if date_from:
                 params["dateFrom"] = self._parse_date(date_from)
             if date_to:
                 params["dateTo"] = self._parse_date(date_to)
+        if updated_at_from:
+            params["updatedAtFrom"] = self._parse_date(updated_at_from)
+        if updated_at_to:
+            params["updatedAtTo"] = self._parse_date(updated_at_to)
         return params
 
     @staticmethod

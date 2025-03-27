@@ -35,16 +35,18 @@ Fetch product and raw file metadata from the Cloudnet data portal.
 
 Parameters:
 
-| name           | type                     | default | example                                              |
-| -------------- | ------------------------ | ------- | ---------------------------------------------------- |
-| site_id        | `str`                    |         | "hyytiala"                                           |
-| date           | `str` or `datetime.date` | `None`  | "2024-01-01"                                         |
-| date_from      | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
-| date_to        | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
-| instrument_id  | `str` or `[str]`         | `None`  | "rpg-fmcw-94"                                        |
-| instrument_pid | `str` or `[str]`         | `None`  | "https://hdl.handle.net/21.12132/3.191564170f8a4686" |
-| product\*      | `str` or `[str]`         | `None`  | "classification"                                     |
-| show_legacy\*  | `bool`                   | `False` |                                                      |
+| name            | type                     | default | example                                              |
+| --------------- | ------------------------ | ------- | ---------------------------------------------------- |
+| site_id         | `str`                    |         | "hyytiala"                                           |
+| date            | `str` or `datetime.date` | `None`  | "2024-01-01"                                         |
+| date_from       | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
+| date_to         | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
+| updated_at_from | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
+| updated_at_to   | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
+| instrument_id   | `str` or `[str]`         | `None`  | "rpg-fmcw-94"                                        |
+| instrument_pid  | `str` or `[str]`         | `None`  | "https://hdl.handle.net/21.12132/3.191564170f8a4686" |
+| product\*       | `str` or `[str]`         | `None`  | "classification"                                     |
+| show_legacy\*   | `bool`                   | `False` |                                                      |
 
 \* = only in `metadata()`
 
@@ -57,7 +59,8 @@ The `date` parameter supports:
 - "YYYY" — the entire year
 - Or directly as `datetime.date` object
 
-The `date_from` and `date_to` parameters should be "YYYY-MM-DD" or `datetime.date`. If `date` is defined, `date_from` and `date_to` have no effect.
+The `date_from`, `date_to`, `updated_at_from` and `updated_at_to` parameters
+should be of form "YYYY-MM-DD" or `datetime.date`. Note that, if `date` is defined, `date_from` and `date_to` have no effect.
 
 **Return value**
 
