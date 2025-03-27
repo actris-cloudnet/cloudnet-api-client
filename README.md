@@ -33,9 +33,9 @@ Parameters:
 | date           | `str` or `datetime.date` | `None`  | "2024-01-01"                                         |
 | date_from      | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
 | date_to        | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
-| instrument_id  | `str` or `list[str]`     | `None`  | "rpg-fmcw-94"                                        |
-| instrument_pid | `str` or `list[str]`     | `None`  | "https://hdl.handle.net/21.12132/3.191564170f8a4686" |
-| product\*      | `str` or `list[str]`     | `None`  | "classification"                                     |
+| instrument_id  | `str` or `[str]`         | `None`  | "rpg-fmcw-94"                                        |
+| instrument_pid | `str` or `[str]`         | `None`  | "https://hdl.handle.net/21.12132/3.191564170f8a4686" |
+| product\*      | `str` or `[str]`         | `None`  | "classification"                                     |
 | show_legacy\*  | `bool`                   | `False` |                                                      |
 
 \* = only in `metadata()`
@@ -61,15 +61,15 @@ Additional filtering of fetched metadata.
 
 Parameters:
 
-| name               | type                                 | default |
-| ------------------ | ------------------------------------ | ------- |
-| metadata           | `list[RawMetadata\|ProductMetadata]` |         |
-| include_pattern    | `str`                                | `None`  |
-| exclude_pattern    | `str`                                | `None`  |
-| filename_prefix    | `str`                                | `None`  |
-| filename_suffix    | `str`                                | `None`  |
-| include_tag_subset | `set[str]`                           | `None`  |
-| exclude_tag_subset | `set[str]`                           | `None`  |
+| name               | type                                   | default |
+| ------------------ | -------------------------------------- | ------- |
+| metadata           | `[RawMetadata]` or `[ProductMetadata]` |         |
+| include_pattern    | `str`                                  | `None`  |
+| exclude_pattern    | `str`                                  | `None`  |
+| filename_prefix    | `str`                                  | `None`  |
+| filename_suffix    | `str`                                  | `None`  |
+| include_tag_subset | `{str}`                                | `None`  |
+| exclude_tag_subset | `{str}`                                | `None`  |
 
 ### `cloudnet_api_client.download([Metadata])`
 
@@ -77,11 +77,11 @@ Function to download files from fetched metadata.
 
 Parameters:
 
-| name              | type                                 | default |
-| ----------------- | ------------------------------------ | ------- |
-| metadata          | `list[RawMetadata\|ProductMetadata]` |         |
-| output_directory  | `PathLike`                           |         |
-| concurrency_limit | `int`                                | 5       |
+| name              | type                                   | default |
+| ----------------- | -------------------------------------- | ------- |
+| metadata          | `[RawMetadata]` or `[ProductMetadata]` |         |
+| output_directory  | `PathLike`                             |         |
+| concurrency_limit | `int`                                  | 5       |
 
 ## License
 

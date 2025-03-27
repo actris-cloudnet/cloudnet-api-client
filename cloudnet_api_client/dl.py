@@ -7,18 +7,20 @@ from pathlib import Path
 import aiohttp
 
 from cloudnet_api_client import utils
-from cloudnet_api_client.containers import Metadata, RawMetadata
+from cloudnet_api_client.containers import ProductMetadata, RawMetadata
+
+MetadataList = list[ProductMetadata] | list[RawMetadata]
 
 
 def download(
-    metadata: list[Metadata], output_directory: PathLike, concurrency_limit: int = 5
+    metadata: MetadataList, output_directory: str | PathLike, concurrency_limit: int = 5
 ) -> None:
     os.makedirs(output_directory, exist_ok=True)
     asyncio.run(_download_files(metadata, output_directory, concurrency_limit))
 
 
 async def _download_files(
-    metadata: list[Metadata], output_path: PathLike, concurrency_limit: int
+    metadata: MetadataList, output_path: str | PathLike, concurrency_limit: int
 ) -> None:
     semaphore = asyncio.Semaphore(concurrency_limit)
     async with aiohttp.ClientSession() as session:
@@ -76,6 +78,8 @@ async def _download_file(
         logging.info(f"Downloaded: {destination}")
 
 
-def _file_checksum_matches(meta: Metadata, destination: Path) -> bool:
+def _file_checksum_matches(
+    meta: ProductMetadata | RawMetadata, destination: Path
+) -> bool:
     fun = utils.md5sum if isinstance(meta, RawMetadata) else utils.sha256sum
     return fun(destination) == meta.checksum
