@@ -94,7 +94,7 @@ class APIClient:
 
     @staticmethod
     def filter(
-        meta: list[Metadata],
+        metadata: list[Metadata],
         include_pattern: str | None = None,
         exclude_pattern: str | None = None,
         filename_prefix: str | None = None,
@@ -103,30 +103,34 @@ class APIClient:
         exclude_tag_subset: set[str] | None = None,
     ) -> list[Metadata]:
         if include_pattern:
-            meta = [m for m in meta if re.search(include_pattern, m.filename, re.I)]
+            metadata = [
+                m for m in metadata if re.search(include_pattern, m.filename, re.I)
+            ]
         if exclude_pattern:
-            meta = [m for m in meta if not re.search(exclude_pattern, m.filename, re.I)]
+            metadata = [
+                m for m in metadata if not re.search(exclude_pattern, m.filename, re.I)
+            ]
         if filename_prefix:
-            meta = [m for m in meta if m.filename.startswith(filename_prefix)]
+            metadata = [m for m in metadata if m.filename.startswith(filename_prefix)]
         if filename_suffix:
-            meta = [m for m in meta if m.filename.endswith(filename_suffix)]
+            metadata = [m for m in metadata if m.filename.endswith(filename_suffix)]
         if include_tag_subset:
-            meta = [
+            metadata = [
                 m
-                for m in meta
+                for m in metadata
                 if isinstance(m, RawMetadata)
                 and m.tags
                 and include_tag_subset.issubset(m.tags)
             ]
         if exclude_tag_subset:
-            meta = [
+            metadata = [
                 m
-                for m in meta
+                for m in metadata
                 if isinstance(m, RawMetadata)
                 and m.tags
                 and not exclude_tag_subset.issubset(m.tags)
             ]
-        return meta
+        return metadata
 
     def _get_response(self, endpoint: str, params: dict | None = None) -> list[dict]:
         url = urljoin(self.base_url, endpoint)
