@@ -10,8 +10,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from cloudnet_api_client.containers import (
-    PRODUCT_TYPES,
-    SITE_TYPES,
+    PRODUCT_TYPE,
+    SITE_TYPE,
     Instrument,
     Metadata,
     Product,
@@ -22,6 +22,7 @@ from cloudnet_api_client.containers import (
 
 T = TypeVar("T")
 type DateParam = str | datetime.date | None
+type QueryParam = str | list[str] | None
 
 
 class APIClient:
@@ -33,16 +34,20 @@ class APIClient:
         self.base_url = base_url
         self.session = session or _make_session()
 
-    def sites(self, type: SITE_TYPES | None = None) -> list[Site]:
-        params = {"type": type} if type else None
+    def sites(self, type: SITE_TYPE | list[SITE_TYPE] | None = None) -> list[Site]:
+        params = {"type": type}
         res = self._get_response("sites", params)
         return _build_objects(res, Site)
 
-    def products(self, type: PRODUCT_TYPES | None = None) -> list[Product]:
+    def products(
+        self, type: PRODUCT_TYPE | list[PRODUCT_TYPE] | None = None
+    ) -> list[Product]:
         res = self._get_response("products")
         data = _build_objects(res, Product)
-        if type:
+        if isinstance(type, str):
             data = [obj for obj in data if type in obj.type]
+        elif isinstance(type, list):
+            data = [obj for obj in data if any(t in obj.type for t in type)]
         return data
 
     def metadata(
@@ -51,16 +56,16 @@ class APIClient:
         date: DateParam = None,
         date_from: DateParam = None,
         date_to: DateParam = None,
-        product: str | list[str] | None = None,
-        instrument: str | list[str] | None = None,
-        instrument_pid: str | list[str] | None = None,
+        instrument_id: QueryParam = None,
+        instrument_pid: QueryParam = None,
+        product: QueryParam = None,
         show_legacy: bool = False,
     ) -> list[ProductMetadata]:
         params = {
             "site": site_id,
-            "product": product,
-            "instrument": instrument,
+            "instrument": instrument_id,
             "instrumentPid": instrument_pid,
+            "product": product,
             "showLegacy": show_legacy,
         }
         date_params = self._mangle_dates(date, date_from, date_to)
@@ -69,9 +74,21 @@ class APIClient:
         return _build_objects(res, ProductMetadata)
 
     def raw_metadata(
-        self, site_id: str, date: datetime.date | str, instrument_pid: str | None = None
+        self,
+        site_id: str,
+        date: DateParam = None,
+        date_from: DateParam = None,
+        date_to: DateParam = None,
+        instrument_id: QueryParam = None,
+        instrument_pid: QueryParam = None,
     ) -> list[RawMetadata]:
-        params = {"site": site_id, "date": date, "instrumentPid": instrument_pid}
+        params = {
+            "site": site_id,
+            "instrument": instrument_id,
+            "instrumentPid": instrument_pid,
+        }
+        date_params = self._mangle_dates(date, date_from, date_to)
+        params.update(date_params)
         res = self._get_response("raw-files", params)
         return _build_raw_meta_objects(res)
 
@@ -180,7 +197,7 @@ def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
 
 def _construct_instrument(obj: dict) -> Instrument:
     return Instrument(
-        id=obj["instrumentInfo"]["instrumentId"],
+        instrument_id=obj["instrumentInfo"]["instrumentId"],
         model=obj["instrumentInfo"]["model"],
         type=obj["instrumentInfo"]["type"],
         uuid=obj["instrumentInfo"]["uuid"],

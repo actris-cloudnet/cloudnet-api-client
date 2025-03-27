@@ -2,8 +2,8 @@ import uuid
 from dataclasses import dataclass
 from typing import Literal
 
-SITE_TYPES = Literal["cloudnet", "model", "hidden", "campaign"]
-PRODUCT_TYPES = Literal["instrument", "geophysical", "evaluation"]
+SITE_TYPE = Literal["cloudnet", "model", "hidden", "campaign"]
+PRODUCT_TYPE = Literal["instrument", "geophysical", "evaluation"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,7 +19,7 @@ class Site:
     country: str
     country_code: str
     country_subdivision_code: str | None
-    type: SITE_TYPES
+    type: SITE_TYPE
     status: Literal["active", "inactive"]
     gaw: str | None
 
@@ -28,13 +28,13 @@ class Site:
 class Product:
     id: str
     human_readable_name: str
-    type: PRODUCT_TYPES
+    type: PRODUCT_TYPE
     experimental: bool
 
 
 @dataclass(frozen=True, slots=True)
 class Instrument:
-    id: str  # CLU internal identifier, e.g. "rpg-fmcw-94"
+    instrument_id: str  # CLU internal identifier, e.g. "rpg-fmcw-94"
     model: str  # From ACTRIS Vocabulary, e.g. "RPG-FMCW-94 DP"
     type: str  # From ACTRIS Vocabulary, e.g. "Doppler non-scanning cloud radar"
     name: str  # e.g. "FMI RPG-FMCW-94 (Pallas)"
@@ -60,7 +60,7 @@ class Metadata:
 class RawMetadata(Metadata):
     status: Literal["created", "uploaded", "processed", "invalid"]
     instrument: Instrument
-    tags: list[str]
+    tags: list[str] | None
 
 
 @dataclass(frozen=True, slots=True)
