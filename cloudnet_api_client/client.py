@@ -21,8 +21,8 @@ from cloudnet_api_client.containers import (
 )
 
 T = TypeVar("T")
-type DateParam = str | datetime.date | None
-type QueryParam = str | list[str] | None
+DateParam = str | datetime.date | None
+QueryParam = str | list[str] | None
 
 
 class APIClient:
