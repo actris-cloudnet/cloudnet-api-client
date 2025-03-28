@@ -1,21 +1,19 @@
-import base64
 import hashlib
-import os
+from os import PathLike
+from typing import Literal
 
 
-def sha256sum(filename: str | os.PathLike) -> str:
-    return _calc_hash_sum(filename, "sha256", is_base64=False)
+def sha256sum(filename: str | PathLike) -> str:
+    return _calc_hash_sum(filename, "sha256")
 
 
-def md5sum(filename: str | os.PathLike, *, is_base64: bool = False) -> str:
-    return _calc_hash_sum(filename, "md5", is_base64=is_base64)
+def md5sum(filename: str | PathLike) -> str:
+    return _calc_hash_sum(filename, "md5")
 
 
-def _calc_hash_sum(filename, method, *, is_base64: bool) -> str:
+def _calc_hash_sum(filename: str | PathLike, method: Literal["sha256", "md5"]) -> str:
     hash_sum = getattr(hashlib, method)()
     with open(filename, "rb") as f:
         for byte_block in iter(lambda: f.read(4096), b""):
             hash_sum.update(byte_block)
-    if is_base64:
-        return base64.encodebytes(hash_sum.digest()).decode("utf-8").strip()
     return hash_sum.hexdigest()

@@ -86,7 +86,7 @@ class APIClient:
             "product": product,
             "showLegacy": show_legacy,
         }
-        date_params = self._mangle_dates(
+        date_params = _mangle_dates(
             date, date_from, date_to, updated_at_from, updated_at_to
         )
         params.update(date_params)
@@ -109,7 +109,7 @@ class APIClient:
             "instrument": instrument_id,
             "instrumentPid": instrument_pid,
         }
-        date_params = self._mangle_dates(
+        date_params = _mangle_dates(
             date, date_from, date_to, updated_at_from, updated_at_to
         )
         params.update(date_params)
@@ -162,63 +162,61 @@ class APIClient:
         res.raise_for_status()
         return res.json()
 
-    def _mangle_dates(
-        self,
-        date: DateParam,
-        date_from: DateParam,
-        date_to: DateParam,
-        updated_at_from: DateParam,
-        updated_at_to: DateParam,
-    ) -> dict:
-        params = {}
-        if isinstance(date, datetime.date):
-            params["date"] = date
-        elif isinstance(date, str):
-            if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
-                params["date"] = self._parse_date(date)
-            elif re.fullmatch(r"\d{4}-\d{2}", date):
-                date = datetime.datetime.strptime(date, "%Y-%m")
-                last_day_number = calendar.monthrange(date.year, date.month)[1]
-                params["dateFrom"] = datetime.date(date.year, date.month, 1)
-                params["dateTo"] = datetime.date(date.year, date.month, last_day_number)
-            elif re.fullmatch(r"\d{4}", date):
-                params["dateFrom"] = datetime.date(int(date), 1, 1)
-                params["dateTo"] = datetime.date(int(date), 12, 31)
-            else:
-                raise ValueError("Invalid date format")
-        else:
-            if date_from:
-                params["dateFrom"] = self._parse_date(date_from)
-            if date_to:
-                params["dateTo"] = self._parse_date(date_to)
-        if updated_at_from:
-            params["updatedAtFrom"] = self._parse_date(updated_at_from)
-        if updated_at_to:
-            params["updatedAtTo"] = self._parse_date(updated_at_to)
-        return params
 
-    @staticmethod
-    def _parse_date(date: DateParam) -> datetime.date:
-        if not date:
-            raise ValueError("Date parameter is required")
-        if isinstance(date, datetime.date):
-            return date
-        try:
-            return datetime.datetime.strptime(date, "%Y-%m-%d").date()
-        except ValueError as e:
-            raise ValueError(f"Invalid date format: {date}") from e
+def _mangle_dates(
+    date: DateParam,
+    date_from: DateParam,
+    date_to: DateParam,
+    updated_at_from: DateParam,
+    updated_at_to: DateParam,
+) -> dict:
+    params = {}
+    if isinstance(date, datetime.date):
+        params["date"] = date
+    elif isinstance(date, str):
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
+            params["date"] = _parse_date(date)
+        elif re.fullmatch(r"\d{4}-\d{2}", date):
+            date = datetime.datetime.strptime(date, "%Y-%m")
+            last_day_number = calendar.monthrange(date.year, date.month)[1]
+            params["dateFrom"] = datetime.date(date.year, date.month, 1)
+            params["dateTo"] = datetime.date(date.year, date.month, last_day_number)
+        elif re.fullmatch(r"\d{4}", date):
+            params["dateFrom"] = datetime.date(int(date), 1, 1)
+            params["dateTo"] = datetime.date(int(date), 12, 31)
+        else:
+            raise ValueError("Invalid date format")
+    else:
+        if date_from:
+            params["dateFrom"] = _parse_date(date_from)
+        if date_to:
+            params["dateTo"] = _parse_date(date_to)
+    if updated_at_from:
+        params["updatedAtFrom"] = _parse_date(updated_at_from)
+    if updated_at_to:
+        params["updatedAtTo"] = _parse_date(updated_at_to)
+    return params
+
+
+def _parse_date(date: str | datetime.date) -> datetime.date:
+    if isinstance(date, datetime.date):
+        return date
+    try:
+        return datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError as e:
+        raise ValueError(f"Invalid date format: {date}") from e
 
 
 def _build_objects(res: list[dict], object_type: type[T]) -> list[T]:
     assert is_dataclass(object_type)
     field_names = {f.name for f in fields(object_type)}
-    instances = [
+    objects = [
         object_type(
             **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names}
         )
         for obj in res
     ]
-    return cast(list[T], instances)
+    return cast(list[T], objects)
 
 
 def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
@@ -226,23 +224,19 @@ def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
     return [
         RawMetadata(
             **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
-            instrument=_construct_instrument(obj),
+            instrument=Instrument(
+                instrument_id=obj["instrumentInfo"]["instrumentId"],
+                model=obj["instrumentInfo"]["model"],
+                type=obj["instrumentInfo"]["type"],
+                uuid=obj["instrumentInfo"]["uuid"],
+                pid=obj["instrumentInfo"]["pid"],
+                owners=obj["instrumentInfo"]["owners"],
+                serial_number=obj["instrumentInfo"]["serialNumber"],
+                name=obj["instrumentInfo"]["name"],
+            ),
         )
         for obj in res
     ]
-
-
-def _construct_instrument(obj: dict) -> Instrument:
-    return Instrument(
-        instrument_id=obj["instrumentInfo"]["instrumentId"],
-        model=obj["instrumentInfo"]["model"],
-        type=obj["instrumentInfo"]["type"],
-        uuid=obj["instrumentInfo"]["uuid"],
-        pid=obj["instrumentInfo"]["pid"],
-        owners=obj["instrumentInfo"]["owners"],
-        serial_number=obj["instrumentInfo"]["serialNumber"],
-        name=obj["instrumentInfo"]["name"],
-    )
 
 
 def _to_snake(name: str) -> str:
