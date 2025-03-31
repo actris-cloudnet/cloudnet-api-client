@@ -76,6 +76,7 @@ class APIClient:
         updated_at_to: DateParam = None,
         instrument_id: QueryParam = None,
         instrument_pid: QueryParam = None,
+        model_id: QueryParam = None,
         product: QueryParam = None,
         show_legacy: bool = False,
     ) -> list[ProductMetadata]:
@@ -92,17 +93,14 @@ class APIClient:
         params.update(date_params)
         files_res = self._get_response("files", params)
 
-        # Add model product(s) when applicable
-        if not (instrument_id or instrument_pid) and (
-            not product or "model" in product
-        ):
-            del params["showLegacy"]
-            del params["product"]
-            model_res = self._get_response("model-files", params)
-        else:
-            model_res = []
+        # Add model files if requested
+        if not product or "model" in product:
+            for key in ("showLegacy", "product", "instrument", "instrumentPid"):
+                del params[key]
+            params["model"] = model_id
+            files_res += self._get_response("model-files", params)
 
-        return _build_objects(files_res + model_res, ProductMetadata)
+        return _build_objects(files_res, ProductMetadata)
 
     def raw_metadata(
         self,
