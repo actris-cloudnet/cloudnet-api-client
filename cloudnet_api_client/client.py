@@ -90,8 +90,19 @@ class APIClient:
             date, date_from, date_to, updated_at_from, updated_at_to
         )
         params.update(date_params)
-        res = self._get_response("files", params)
-        return _build_objects(res, ProductMetadata)
+        files_res = self._get_response("files", params)
+
+        # Add model product(s) when applicable
+        if not (instrument_id or instrument_pid) and (
+            not product or "model" in product
+        ):
+            del params["showLegacy"]
+            del params["product"]
+            model_res = self._get_response("model-files", params)
+        else:
+            model_res = []
+
+        return _build_objects(files_res + model_res, ProductMetadata)
 
     def raw_metadata(
         self,

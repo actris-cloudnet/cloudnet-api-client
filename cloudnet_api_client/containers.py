@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 SITE_TYPE = Literal["cloudnet", "model", "hidden", "campaign"]
-PRODUCT_TYPE = Literal["instrument", "geophysical", "evaluation"]
+PRODUCT_TYPE = Literal["instrument", "geophysical", "evaluation", "model"]
 
 
 @dataclass(frozen=True, slots=True)
