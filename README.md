@@ -1,6 +1,7 @@
 [![CI](https://github.com/actris-cloudnet/cloudnet-api-client/actions/workflows/test.yml/badge.svg)](https://github.com/actris-cloudnet/cloudnet-api-client/actions/workflows/test.yml)
+[![PyPI version](https://badge.fury.io/py/cloudnet-api-client.svg)](https://badge.fury.io/py/cloudnet-api-client)
 
-# cloudnet-api-client
+# Cloudnet API client
 
 Official Python client for the [Cloudnet data portal API](https://docs.cloudnet.fmi.fi/api/data-portal.html).
 
