@@ -100,7 +100,7 @@ class APIClient:
             params["model"] = model_id
             files_res += self._get_response("model-files", params)
 
-        return _build_objects(files_res, ProductMetadata)
+        return _build_meta_objects(files_res)
 
     def raw_metadata(
         self,
@@ -226,6 +226,22 @@ def _build_objects(res: list[dict], object_type: type[T]) -> list[T]:
         for obj in res
     ]
     return cast(list[T], objects)
+
+
+def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
+    field_names = {f.name for f in fields(ProductMetadata)} - {"product"}
+    return [
+        ProductMetadata(
+            **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
+            product=Product(
+                id=obj["product"]["id"],
+                human_readable_name=obj["product"]["humanReadableName"],
+                type=[obj["product"]["type"][1:-1]],
+                experimental=obj["product"]["experimental"],
+            ),
+        )
+        for obj in res
+    ]
 
 
 def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:

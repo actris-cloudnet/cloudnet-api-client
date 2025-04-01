@@ -28,7 +28,7 @@ class Site:
 class Product:
     id: str
     human_readable_name: str
-    type: PRODUCT_TYPE
+    type: list[PRODUCT_TYPE]
     experimental: bool
 
 
