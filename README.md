@@ -35,32 +35,38 @@ Fetch product and raw file metadata from the Cloudnet data portal.
 
 Parameters:
 
-| name            | type                     | default | example                                              |
-| --------------- | ------------------------ | ------- | ---------------------------------------------------- |
-| site_id         | `str`                    |         | "hyytiala"                                           |
-| date            | `str` or `datetime.date` | `None`  | "2024-01-01"                                         |
-| date_from       | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
-| date_to         | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
-| updated_at_from | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
-| updated_at_to   | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
-| instrument_id   | `str` or `list[str]`     | `None`  | "rpg-fmcw-94"                                        |
-| instrument_pid  | `str` or `list[str]`     | `None`  | "https://hdl.handle.net/21.12132/3.191564170f8a4686" |
-| product\*       | `str` or `list[str]`     | `None`  | "classification"                                     |
-| show_legacy\*   | `bool`                   | `False` |                                                      |
+| name            | type                        | default | example                                              |
+| --------------- | --------------------------- | ------- | ---------------------------------------------------- |
+| site_id         | `str`                       |         | "hyytiala"                                           |
+| date            | `str` or `date`             | `None`  | "2024-01-01"                                         |
+| date_from       | `str` or `date`             | `None`  | "2025-01-01"                                         |
+| date_to         | `str` or `date`             | `None`  | "2025-01-01"                                         |
+| updated_at      | `str`, `date` or `datetime` | `None`  | "2025-01-01T12:00:00"                                |
+| updated_at_from | `str`, `date` or `datetime` | `None`  | "2025-01-01T12:00:00"                                |
+| updated_at_to   | `str`, `date` or `datetime` | `None`  | "2025-01-01T12:00:00"                                |
+| instrument_id   | `str` or `list[str]`        | `None`  | "rpg-fmcw-94"                                        |
+| instrument_pid  | `str` or `list[str]`        | `None`  | "https://hdl.handle.net/21.12132/3.191564170f8a4686" |
+| product\*       | `str` or `list[str]`        | `None`  | "classification"                                     |
+| show_legacy\*   | `bool`                      | `False` |                                                      |
 
 \* = only in `metadata()`
 
 **Date Handling**
 
-The `date` parameter supports:
+The `date`, `date_from` and `date_to` parameters support:
 
 - "YYYY-MM-DD" — a specific date
 - "YYYY-MM" — the entire month
 - "YYYY" — the entire year
 - Or directly as `datetime.date` object
 
-The `date_from`, `date_to`, `updated_at_from` and `updated_at_to` parameters
-should be of form "YYYY-MM-DD" or `datetime.date`. Note that, if `date` is defined, `date_from` and `date_to` have no effect.
+In addition to these, the `updated_at`, `updated_at_from` and `updated_at_to` parameters support:
+
+- "YYYY-MM-DDTHH" — a specific hour
+- "YYYY-MM-DDTHH:MM" — a specific minute
+- "YYYY-MM-DDTHH:MM:SS" — a specific second
+- "YYYY-MM-DDTHH:MM:SS.FFFFFF" — a specific microsecond
+- Or directly as `datetime.datetime` object
 
 **Return value**
 

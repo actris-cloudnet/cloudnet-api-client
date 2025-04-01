@@ -22,6 +22,7 @@ from cloudnet_api_client.containers import (
 
 T = TypeVar("T")
 DateParam = str | datetime.date | None
+DateTimeParam = str | datetime.datetime | datetime.date | None
 QueryParam = str | list[str] | None
 
 
@@ -72,8 +73,9 @@ class APIClient:
         date: DateParam = None,
         date_from: DateParam = None,
         date_to: DateParam = None,
-        updated_at_from: DateParam = None,
-        updated_at_to: DateParam = None,
+        updated_at: DateTimeParam = None,
+        updated_at_from: DateTimeParam = None,
+        updated_at_to: DateTimeParam = None,
         instrument_id: QueryParam = None,
         instrument_pid: QueryParam = None,
         model_id: QueryParam = None,
@@ -87,10 +89,10 @@ class APIClient:
             "product": product,
             "showLegacy": show_legacy,
         }
-        date_params = _mangle_dates(
-            date, date_from, date_to, updated_at_from, updated_at_to
+        _add_date_params(
+            params, date, date_from, date_to, updated_at, updated_at_from, updated_at_to
         )
-        params.update(date_params)
+
         files_res = self._get_response("files", params)
 
         # Add model files if requested
@@ -108,8 +110,9 @@ class APIClient:
         date: DateParam = None,
         date_from: DateParam = None,
         date_to: DateParam = None,
-        updated_at_from: DateParam = None,
-        updated_at_to: DateParam = None,
+        updated_at: DateTimeParam = None,
+        updated_at_from: DateTimeParam = None,
+        updated_at_to: DateTimeParam = None,
         instrument_id: QueryParam = None,
         instrument_pid: QueryParam = None,
     ) -> list[RawMetadata]:
@@ -118,10 +121,9 @@ class APIClient:
             "instrument": instrument_id,
             "instrumentPid": instrument_pid,
         }
-        date_params = _mangle_dates(
-            date, date_from, date_to, updated_at_from, updated_at_to
+        _add_date_params(
+            params, date, date_from, date_to, updated_at, updated_at_from, updated_at_to
         )
-        params.update(date_params)
         res = self._get_response("raw-files", params)
         return _build_raw_meta_objects(res)
 
@@ -172,48 +174,107 @@ class APIClient:
         return res.json()
 
 
-def _mangle_dates(
+def _add_date_params(
+    params: dict,
     date: DateParam,
     date_from: DateParam,
     date_to: DateParam,
-    updated_at_from: DateParam,
-    updated_at_to: DateParam,
-) -> dict:
-    params = {}
-    if isinstance(date, datetime.date):
-        params["date"] = date
-    elif isinstance(date, str):
-        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
-            params["date"] = _parse_date(date)
-        elif re.fullmatch(r"\d{4}-\d{2}", date):
-            date = datetime.datetime.strptime(date, "%Y-%m")
-            last_day_number = calendar.monthrange(date.year, date.month)[1]
-            params["dateFrom"] = datetime.date(date.year, date.month, 1)
-            params["dateTo"] = datetime.date(date.year, date.month, last_day_number)
-        elif re.fullmatch(r"\d{4}", date):
-            params["dateFrom"] = datetime.date(int(date), 1, 1)
-            params["dateTo"] = datetime.date(int(date), 12, 31)
-        else:
-            raise ValueError("Invalid date format")
-    else:
-        if date_from:
-            params["dateFrom"] = _parse_date(date_from)
-        if date_to:
-            params["dateTo"] = _parse_date(date_to)
-    if updated_at_from:
-        params["updatedAtFrom"] = _parse_date(updated_at_from)
-    if updated_at_to:
-        params["updatedAtTo"] = _parse_date(updated_at_to)
-    return params
+    updated_at: DateTimeParam,
+    updated_at_from: DateTimeParam,
+    updated_at_to: DateTimeParam,
+):
+    if date is not None and (date_from is not None or date_to is not None):
+        msg = "Cannot use 'date' with 'date_from' and 'date_to'"
+        raise ValueError(msg)
+    if date is not None:
+        start, stop = _parse_date(date)
+        params["dateFrom"] = start.isoformat()
+        params["dateTo"] = stop.isoformat()
+    if date_from is not None:
+        params["dateFrom"] = _parse_date(date_from)[0].isoformat()
+    if date_to is not None:
+        params["dateTo"] = _parse_date(date_to)[1].isoformat()
+
+    if updated_at is not None and (
+        updated_at_from is not None or updated_at_to is not None
+    ):
+        msg = "Cannot use 'updated_at' with 'updated_at_from' and 'updated_at_to'"
+        raise ValueError(msg)
+    if updated_at is not None:
+        start, stop = _parse_datetime(updated_at)
+        params["updatedAtFrom"] = start.isoformat()
+        params["updatedAtTo"] = stop.isoformat()
+    if updated_at_from is not None:
+        params["updatedAtFrom"] = _parse_datetime(updated_at_from)[0].isoformat()
+    if updated_at_to is not None:
+        params["updatedAtTo"] = _parse_datetime(updated_at_to)[1].isoformat()
 
 
-def _parse_date(date: str | datetime.date) -> datetime.date:
+def _parse_date(date: DateParam) -> tuple[datetime.date, datetime.date]:
     if isinstance(date, datetime.date):
-        return date
-    try:
-        return datetime.datetime.strptime(date, "%Y-%m-%d").date()
-    except ValueError as e:
-        raise ValueError(f"Invalid date format: {date}") from e
+        return date, date
+    error = ValueError(f"Invalid date format: {date}")
+    if isinstance(date, str):
+        try:
+            parts = [int(part) for part in date.split("-")]
+        except ValueError:
+            raise error from None
+        match parts:
+            case [year, month, day]:
+                date = datetime.date(year, month, day)
+                return date, date
+            case [year, month]:
+                last_day_number = calendar.monthrange(year, month)[1]
+                return datetime.date(year, month, 1), datetime.date(
+                    year, month, last_day_number
+                )
+            case [year]:
+                return datetime.date(year, 1, 1), datetime.date(year, 12, 31)
+    raise error
+
+
+def _parse_datetime(dt: DateTimeParam) -> tuple[datetime.datetime, datetime.datetime]:
+    if isinstance(dt, datetime.datetime):
+        return dt, dt
+    if isinstance(dt, datetime.date):
+        return datetime.datetime.combine(
+            dt, datetime.time(0, 0, 0, 0)
+        ), datetime.datetime.combine(dt, datetime.time(23, 59, 59, 999999))
+    if isinstance(dt, str):
+        patterns = {
+            ("%Y", "years"),
+            ("%Y-%m", "months"),
+            ("%Y-%m-%d", "days"),
+            ("%Y-%m-%dT%H", "hours"),
+            ("%Y-%m-%dT%H:%M", "minutes"),
+            ("%Y-%m-%dT%H:%M:%S", "seconds"),
+            ("%Y-%m-%dT%H:%M:%S.%f", "microseconds"),
+        }
+        for fmt, unit in patterns:
+            try:
+                start_date = datetime.datetime.strptime(dt, fmt)
+            except ValueError:
+                continue
+            if unit == "years":
+                end_date = start_date.replace(year=start_date.year + 1)
+            elif unit == "months":
+                if start_date.month == 12:
+                    end_date = start_date.replace(year=start_date.year + 1, month=1)
+                else:
+                    end_date = start_date.replace(month=start_date.month + 1)
+            elif unit == "days":
+                end_date = start_date + datetime.timedelta(days=1)
+            elif unit == "hours":
+                end_date = start_date + datetime.timedelta(hours=1)
+            elif unit == "minutes":
+                end_date = start_date + datetime.timedelta(minutes=1)
+            elif unit == "seconds":
+                end_date = start_date + datetime.timedelta(seconds=1)
+            elif unit == "microseconds":
+                return start_date, start_date
+            return start_date, end_date - datetime.timedelta(microseconds=1)
+    msg = f"Invalid datetime format: {dt}"
+    raise ValueError(msg)
 
 
 def _build_objects(res: list[dict], object_type: type[T]) -> list[T]:
