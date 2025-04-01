@@ -19,7 +19,7 @@ class Site:
     country: str
     country_code: str
     country_subdivision_code: str | None
-    type: SITE_TYPE
+    type: list[SITE_TYPE]
     status: Literal["active", "inactive"]
     gaw: str | None
 
