@@ -19,11 +19,20 @@ def download(
     output_directory: str | PathLike,
     concurrency_limit: int = 5,
     progress: bool | None = None,
+):
+    asyncio.run(adownload(metadata, output_directory, concurrency_limit, progress))
+
+
+async def adownload(
+    metadata: MetadataList,
+    output_directory: str | PathLike,
+    concurrency_limit: int = 5,
+    progress: bool | None = None,
 ) -> None:
     disable_progress = not progress if progress is not None else None
     os.makedirs(output_directory, exist_ok=True)
-    asyncio.run(
-        _download_files(metadata, output_directory, concurrency_limit, disable_progress)
+    await _download_files(
+        metadata, output_directory, concurrency_limit, disable_progress
     )
 
 
