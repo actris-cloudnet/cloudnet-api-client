@@ -29,7 +29,7 @@ cac.download(raw_metadata, "data_raw/")
 
 ## Documentation
 
-### `APIClient().metadata()` and `raw_metadata()` &rarr; `[Metadata]`
+### `APIClient().metadata()` and `raw_metadata()` &rarr; `list[Metadata]`
 
 Fetch product and raw file metadata from the Cloudnet data portal.
 
@@ -43,9 +43,9 @@ Parameters:
 | date_to         | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
 | updated_at_from | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
 | updated_at_to   | `str` or `datetime.date` | `None`  | "2025-01-01"                                         |
-| instrument_id   | `str` or `[str]`         | `None`  | "rpg-fmcw-94"                                        |
-| instrument_pid  | `str` or `[str]`         | `None`  | "https://hdl.handle.net/21.12132/3.191564170f8a4686" |
-| product\*       | `str` or `[str]`         | `None`  | "classification"                                     |
+| instrument_id   | `str` or `list[str]`     | `None`  | "rpg-fmcw-94"                                        |
+| instrument_pid  | `str` or `list[str]`     | `None`  | "https://hdl.handle.net/21.12132/3.191564170f8a4686" |
+| product\*       | `str` or `list[str]`     | `None`  | "classification"                                     |
 | show_legacy\*   | `bool`                   | `False` |                                                      |
 
 \* = only in `metadata()`
@@ -66,57 +66,57 @@ should be of form "YYYY-MM-DD" or `datetime.date`. Note that, if `date` is defin
 
 Both methods return a list of `dataclass` instances, `ProductMetadata` and `RawMetadata`, respectively.
 
-### `APIClient().filter([Metadata])` &rarr; `[Metadata]`
+### `APIClient().filter(list[Metadata])` &rarr; `list[Metadata]`
 
 Additional filtering of fetched metadata.
 
 Parameters:
 
-| name               | type                                   | default |
-| ------------------ | -------------------------------------- | ------- |
-| metadata           | `[RawMetadata]` or `[ProductMetadata]` |         |
-| include_pattern    | `str`                                  | `None`  |
-| exclude_pattern    | `str`                                  | `None`  |
-| filename_prefix    | `str`                                  | `None`  |
-| filename_suffix    | `str`                                  | `None`  |
-| include_tag_subset | `{str}`                                | `None`  |
-| exclude_tag_subset | `{str}`                                | `None`  |
+| name               | type                                           | default |
+| ------------------ | ---------------------------------------------- | ------- |
+| metadata           | `list[RawMetadata]` or `list[ProductMetadata]` |         |
+| include_pattern    | `str`                                          | `None`  |
+| exclude_pattern    | `str`                                          | `None`  |
+| filename_prefix    | `str`                                          | `None`  |
+| filename_suffix    | `str`                                          | `None`  |
+| include_tag_subset | `set[str]`                                     | `None`  |
+| exclude_tag_subset | `set[str]`                                     | `None`  |
 
-### `APIClient().sites()` &rarr; `[Site]`
+### `APIClient().sites()` &rarr; `list[Site]`
 
 Fetch cloudnet sites.
 
 Parameters:
 
-| name | type             | Choices                                   | default |
-| ---- | ---------------- | ----------------------------------------- | ------- |
-| type | `str` or `[str]` | "cloudnet", "campaign", "model", "hidden" | `None`  |
+| name | type                 | Choices                                   | default |
+| ---- | -------------------- | ----------------------------------------- | ------- |
+| type | `str` or `list[str]` | "cloudnet", "campaign", "model", "hidden" | `None`  |
 
-### `APIClient().products()` &rarr; `[Product]`
+### `APIClient().products()` &rarr; `list[Product]`
 
 Fetch cloudnet products.
 
 Parameters:
 
-| name | type             | Choices                                   | default |
-| ---- | ---------------- | ----------------------------------------- | ------- |
-| type | `str` or `[str]` | "instrument", "geophysical", "evaluation" | `None`  |
+| name | type                 | Choices                                   | default |
+| ---- | -------------------- | ----------------------------------------- | ------- |
+| type | `str` or `list[str]` | "instrument", "geophysical", "evaluation" | `None`  |
 
-### `APIClient().instruments()` &rarr; `[Instrument]`
+### `APIClient().instruments()` &rarr; `list[Instrument]`
 
 Fetch cloudnet instruments.
 
-### `cloudnet_api_client.download([Metadata])`
+### `cloudnet_api_client.download(list[Metadata])`
 
 Download files from the fetched metadata.
 
 Parameters:
 
-| name              | type                                   | default |
-| ----------------- | -------------------------------------- | ------- |
-| metadata          | `[RawMetadata]` or `[ProductMetadata]` |         |
-| output_directory  | `PathLike` or `str`                    |         |
-| concurrency_limit | `int`                                  | 5       |
+| name              | type                                           | default |
+| ----------------- | ---------------------------------------------- | ------- |
+| metadata          | `list[RawMetadata]` or `list[ProductMetadata]` |         |
+| output_directory  | `PathLike` or `str`                            |         |
+| concurrency_limit | `int`                                          | 5       |
 
 ## License
 
