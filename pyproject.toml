@@ -18,12 +18,12 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Topic :: Scientific/Engineering :: Atmospheric Science",
 ]
-dependencies = ["aiohttp", "numpy", "requests"]
+dependencies = ["aiohttp", "numpy", "requests", "tqdm"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
 test = ["mypy", "pytest"]
-dev = ["pre-commit", "release-version", "types-requests"]
+dev = ["pre-commit", "release-version", "types-requests", "types-tqdm"]
 
 [tool.hatch.version]
 path = "cloudnet_api_client/version.py"
