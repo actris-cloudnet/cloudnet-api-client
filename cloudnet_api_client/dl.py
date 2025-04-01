@@ -19,8 +19,10 @@ def download(
     output_directory: str | PathLike,
     concurrency_limit: int = 5,
     progress: bool | None = None,
-):
-    asyncio.run(adownload(metadata, output_directory, concurrency_limit, progress))
+) -> list[Path]:
+    return asyncio.run(
+        adownload(metadata, output_directory, concurrency_limit, progress)
+    )
 
 
 async def adownload(
@@ -28,25 +30,28 @@ async def adownload(
     output_directory: str | PathLike,
     concurrency_limit: int = 5,
     progress: bool | None = None,
-) -> None:
+) -> list[Path]:
     disable_progress = not progress if progress is not None else None
+    output_directory = Path(output_directory).resolve()
     os.makedirs(output_directory, exist_ok=True)
-    await _download_files(
+    return await _download_files(
         metadata, output_directory, concurrency_limit, disable_progress
     )
 
 
 async def _download_files(
     metadata: MetadataList,
-    output_path: str | PathLike,
+    output_path: Path,
     concurrency_limit: int,
     disable_progress: bool | None,
-) -> None:
+) -> list[Path]:
     semaphore = asyncio.Semaphore(concurrency_limit)
+    full_paths = []
     async with aiohttp.ClientSession() as session:
         tasks = []
         for meta in metadata:
-            destination = output_path / Path(meta.download_url.split("/")[-1])
+            destination = output_path / meta.download_url.split("/")[-1]
+            full_paths.append(destination)
             if destination.exists() and _file_checksum_matches(meta, destination):
                 logging.info(f"Already downloaded: {destination}")
                 continue
@@ -59,6 +64,7 @@ async def _download_files(
         await tqdm_asyncio.gather(
             *tasks, desc="Completed files", disable=disable_progress
         )
+    return full_paths
 
 
 async def _download_file_with_retries(
