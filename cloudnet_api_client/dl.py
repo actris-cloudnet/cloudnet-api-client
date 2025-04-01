@@ -65,7 +65,7 @@ async def _download_file_with_retries(
         try:
             await _download_file(session, url, destination, semaphore, disable_progress)
             return
-        except Exception as e:
+        except aiohttp.ClientError as e:
             logging.warning(f"Attempt {attempt} failed for {url}: {e}")
             if attempt == max_retries:
                 logging.error(f"Giving up on {url} after {max_retries} attempts.")
