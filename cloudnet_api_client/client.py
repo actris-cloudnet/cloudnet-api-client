@@ -115,11 +115,15 @@ class APIClient:
         updated_at_to: DateTimeParam = None,
         instrument_id: QueryParam = None,
         instrument_pid: QueryParam = None,
+        filename_prefix: QueryParam = None,
+        filename_suffix: QueryParam = None,
     ) -> list[RawMetadata]:
         params = {
             "site": site_id,
             "instrument": instrument_id,
             "instrumentPid": instrument_pid,
+            "filenamePrefix": filename_prefix,
+            "filenameSuffix": filename_suffix,
         }
         _add_date_params(
             params, date, date_from, date_to, updated_at, updated_at_from, updated_at_to
@@ -132,8 +136,6 @@ class APIClient:
         metadata: list[Metadata],
         include_pattern: str | None = None,
         exclude_pattern: str | None = None,
-        filename_prefix: str | None = None,
-        filename_suffix: str | None = None,
         include_tag_subset: set[str] | None = None,
         exclude_tag_subset: set[str] | None = None,
     ) -> list[Metadata]:
@@ -145,10 +147,6 @@ class APIClient:
             metadata = [
                 m for m in metadata if not re.search(exclude_pattern, m.filename, re.I)
             ]
-        if filename_prefix:
-            metadata = [m for m in metadata if m.filename.startswith(filename_prefix)]
-        if filename_suffix:
-            metadata = [m for m in metadata if m.filename.endswith(filename_suffix)]
         if include_tag_subset:
             metadata = [
                 m

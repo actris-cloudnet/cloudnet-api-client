@@ -36,21 +36,25 @@ Fetch product and raw file metadata from the Cloudnet data portal.
 
 Parameters:
 
-| name            | type                        | default | example                                              |
-| --------------- | --------------------------- | ------- | ---------------------------------------------------- |
-| site_id         | `str`                       |         | "hyytiala"                                           |
-| date            | `str` or `date`             | `None`  | "2024-01-01"                                         |
-| date_from       | `str` or `date`             | `None`  | "2025-01-01"                                         |
-| date_to         | `str` or `date`             | `None`  | "2025-01-01"                                         |
-| updated_at      | `str`, `date` or `datetime` | `None`  | "2025-01-01T12:00:00"                                |
-| updated_at_from | `str`, `date` or `datetime` | `None`  | "2025-01-01T12:00:00"                                |
-| updated_at_to   | `str`, `date` or `datetime` | `None`  | "2025-01-01T12:00:00"                                |
-| instrument_id   | `str` or `list[str]`        | `None`  | "rpg-fmcw-94"                                        |
-| instrument_pid  | `str` or `list[str]`        | `None`  | "https://hdl.handle.net/21.12132/3.191564170f8a4686" |
-| product\*       | `str` or `list[str]`        | `None`  | "classification"                                     |
-| show_legacy\*   | `bool`                      | `False` |                                                      |
+| name                | type                        | default | example                                              |
+| ------------------- | --------------------------- | ------- | ---------------------------------------------------- |
+| site_id             | `str`                       |         | "hyytiala"                                           |
+| date                | `str` or `date`             | `None`  | "2024-01-01"                                         |
+| date_from           | `str` or `date`             | `None`  | "2025-01-01"                                         |
+| date_to             | `str` or `date`             | `None`  | "2025-01-01"                                         |
+| updated_at          | `str`, `date` or `datetime` | `None`  | "2025-01-01T12:00:00"                                |
+| updated_at_from     | `str`, `date` or `datetime` | `None`  | "2025-01-01T12:00:00"                                |
+| updated_at_to       | `str`, `date` or `datetime` | `None`  | "2025-01-01T12:00:00"                                |
+| instrument_id       | `str` or `list[str]`        | `None`  | "rpg-fmcw-94"                                        |
+| instrument_pid      | `str` or `list[str]`        | `None`  | "https://hdl.handle.net/21.12132/3.191564170f8a4686" |
+| product\*           | `str` or `list[str]`        | `None`  | "classification"                                     |
+| show_legacy\*       | `bool`                      | `False` |                                                      |
+| filename_prefix\*\* | `str` or `list[str]`        | `None`  | "stare"                                              |
+| filename_suffix\*\* | `str` or `list[str]`        | `None`  | ".lv1"                                               |
 
 \* = only in `metadata()`
+
+\*\* = only in `raw_metadata()`
 
 **Date Handling**
 
@@ -84,8 +88,6 @@ Parameters:
 | metadata           | `list[RawMetadata]` or `list[ProductMetadata]` |         |
 | include_pattern    | `str`                                          | `None`  |
 | exclude_pattern    | `str`                                          | `None`  |
-| filename_prefix    | `str`                                          | `None`  |
-| filename_suffix    | `str`                                          | `None`  |
 | include_tag_subset | `set[str]`                                     | `None`  |
 | exclude_tag_subset | `set[str]`                                     | `None`  |
 
