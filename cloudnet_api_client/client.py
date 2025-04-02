@@ -92,11 +92,18 @@ class APIClient:
         _add_date_params(
             params, date, date_from, date_to, updated_at, updated_at_from, updated_at_to
         )
-
-        files_res = self._get_response("files", params)
+        no_instrument = not instrument_id or instrument_pid
+        if no_instrument and (not product and model_id):
+            files_res = []
+        else:
+            files_res = self._get_response("files", params)
 
         # Add model files if requested
-        if not product or "model" in product:
+        if (
+            (not product and no_instrument)
+            or (product and "model" in product)
+            or (model_id and (not product or "model" in product))
+        ):
             for key in ("showLegacy", "product", "instrument", "instrumentPid"):
                 del params[key]
             params["model"] = model_id
