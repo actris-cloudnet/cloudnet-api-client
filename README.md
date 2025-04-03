@@ -115,7 +115,7 @@ Parameters:
 
 Fetch cloudnet instruments.
 
-### `cloudnet_api_client.download(list[Metadata])` &rarr; `list[Path]`
+### `APIClienet().download(list[Metadata])` &rarr; `list[Path]`
 
 Download files from the fetched metadata.
 

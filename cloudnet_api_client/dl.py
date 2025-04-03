@@ -1,7 +1,5 @@
 import asyncio
 import logging
-import os
-from os import PathLike
 from pathlib import Path
 
 import aiohttp
@@ -11,36 +9,10 @@ from tqdm.asyncio import tqdm_asyncio
 from cloudnet_api_client import utils
 from cloudnet_api_client.containers import ProductMetadata, RawMetadata
 
-MetadataList = list[ProductMetadata] | list[RawMetadata]
 
-
-def download(
-    metadata: MetadataList,
-    output_directory: str | PathLike,
-    concurrency_limit: int = 5,
-    progress: bool | None = None,
-) -> list[Path]:
-    return asyncio.run(
-        adownload(metadata, output_directory, concurrency_limit, progress)
-    )
-
-
-async def adownload(
-    metadata: MetadataList,
-    output_directory: str | PathLike,
-    concurrency_limit: int = 5,
-    progress: bool | None = None,
-) -> list[Path]:
-    disable_progress = not progress if progress is not None else None
-    output_directory = Path(output_directory).resolve()
-    os.makedirs(output_directory, exist_ok=True)
-    return await _download_files(
-        metadata, output_directory, concurrency_limit, disable_progress
-    )
-
-
-async def _download_files(
-    metadata: MetadataList,
+async def download_files(
+    base_url: str,
+    metadata: list[ProductMetadata] | list[RawMetadata],
     output_path: Path,
     concurrency_limit: int,
     disable_progress: bool | None,
@@ -50,6 +22,7 @@ async def _download_files(
     async with aiohttp.ClientSession() as session:
         tasks = []
         for meta in metadata:
+            download_url = f"{base_url}{meta.download_url.split('/api/')[-1]}"
             destination = output_path / meta.download_url.split("/")[-1]
             full_paths.append(destination)
             if destination.exists() and _file_checksum_matches(meta, destination):
@@ -57,7 +30,7 @@ async def _download_files(
                 continue
             task = asyncio.create_task(
                 _download_file_with_retries(
-                    session, meta.download_url, destination, semaphore, disable_progress
+                    session, download_url, destination, semaphore, disable_progress
                 )
             )
             tasks.append(task)

@@ -1,7 +1,11 @@
+import asyncio
 import calendar
 import datetime
+import os
 import re
 from dataclasses import fields, is_dataclass
+from os import PathLike
+from pathlib import Path
 from typing import TypeVar, cast
 from urllib.parse import urljoin
 
@@ -19,11 +23,13 @@ from cloudnet_api_client.containers import (
     RawMetadata,
     Site,
 )
+from cloudnet_api_client.dl import download_files
 
 T = TypeVar("T")
 DateParam = str | datetime.date | None
 DateTimeParam = str | datetime.datetime | datetime.date | None
 QueryParam = str | list[str] | None
+MetadataList = list[ProductMetadata] | list[RawMetadata]
 
 
 class APIClient:
@@ -137,6 +143,35 @@ class APIClient:
         )
         res = self._get_response("raw-files", params)
         return _build_raw_meta_objects(res)
+
+    def download(
+        self,
+        metadata: MetadataList,
+        output_directory: str | PathLike,
+        concurrency_limit: int = 5,
+        progress: bool | None = None,
+    ) -> list[Path]:
+        return asyncio.run(
+            self.adownload(metadata, output_directory, concurrency_limit, progress)
+        )
+
+    async def adownload(
+        self,
+        metadata: MetadataList,
+        output_directory: str | PathLike,
+        concurrency_limit: int = 5,
+        progress: bool | None = None,
+    ) -> list[Path]:
+        disable_progress = not progress if progress is not None else None
+        output_directory = Path(output_directory).resolve()
+        os.makedirs(output_directory, exist_ok=True)
+        return await download_files(
+            self.base_url,
+            metadata,
+            output_directory,
+            concurrency_limit,
+            disable_progress,
+        )
 
     @staticmethod
     def filter(
