@@ -100,9 +100,10 @@ Fetch cloudnet sites.
 
 Parameters:
 
-| name | type                 | Choices                                   | default |
-| ---- | -------------------- | ----------------------------------------- | ------- |
-| type | `str` or `list[str]` | "cloudnet", "campaign", "model", "hidden" | `None`  |
+| name    | type                 | Choices                                   | default |
+| ------- | -------------------- | ----------------------------------------- | ------- |
+| site_id | `str`                |                                           | `None`  |
+| type    | `str` or `list[str]` | "cloudnet", "campaign", "model", "hidden" | `None`  |
 
 ### `APIClient().products()` &rarr; `list[Product]`
 

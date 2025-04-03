@@ -43,9 +43,15 @@ class APIClient:
         self.base_url = base_url
         self.session = session or _make_session()
 
-    def sites(self, type: SITE_TYPE | list[SITE_TYPE] | None = None) -> list[Site]:
-        params = {"type": type}
-        res = self._get_response("sites", params)
+    def sites(
+        self,
+        site_id: str | None = None,
+        type: SITE_TYPE | list[SITE_TYPE] | None = None,
+    ) -> list[Site]:
+        if site_id:
+            res = self._get_response(f"sites/{site_id}")
+        else:
+            res = self._get_response("sites", {"type": type})
         return _build_objects(res, Site)
 
     def products(
@@ -215,7 +221,10 @@ class APIClient:
         url = urljoin(self.base_url, endpoint)
         res = self.session.get(url, params=params, timeout=120)
         res.raise_for_status()
-        return res.json()
+        data = res.json()
+        if isinstance(data, dict):
+            data = [data]
+        return data
 
 
 def _add_date_params(
