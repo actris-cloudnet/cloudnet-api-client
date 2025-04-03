@@ -4,6 +4,7 @@ from typing import Literal
 
 SITE_TYPE = Literal["cloudnet", "model", "hidden", "campaign"]
 PRODUCT_TYPE = Literal["instrument", "geophysical", "evaluation", "model"]
+STATUS = Literal["created", "uploaded", "processed", "invalid"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,7 +59,7 @@ class Metadata:
 
 @dataclass(frozen=True, slots=True)
 class RawMetadata(Metadata):
-    status: Literal["created", "uploaded", "processed", "invalid"]
+    status: STATUS
     instrument: Instrument
     tags: list[str] | None
 

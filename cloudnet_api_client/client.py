@@ -16,6 +16,7 @@ from urllib3.util.retry import Retry
 from cloudnet_api_client.containers import (
     PRODUCT_TYPE,
     SITE_TYPE,
+    STATUS,
     Instrument,
     Metadata,
     Product,
@@ -130,6 +131,7 @@ class APIClient:
         instrument_pid: QueryParam = None,
         filename_prefix: QueryParam = None,
         filename_suffix: QueryParam = None,
+        status: STATUS | list[STATUS] | None = None,
     ) -> list[RawMetadata]:
         params = {
             "site": site_id,
@@ -137,6 +139,7 @@ class APIClient:
             "instrumentPid": instrument_pid,
             "filenamePrefix": filename_prefix,
             "filenameSuffix": filename_suffix,
+            "status": status,
         }
         _add_date_params(
             params, date, date_from, date_to, updated_at, updated_at_from, updated_at_to
