@@ -1,3 +1,4 @@
+import datetime
 import uuid
 from dataclasses import dataclass
 from typing import Literal
@@ -51,10 +52,10 @@ class Metadata:
     checksum: str
     size: int
     filename: str
-    measurement_date: str
     download_url: str
-    created_at: str
-    updated_at: str
+    measurement_date: datetime.date
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
 
 
 @dataclass(frozen=True, slots=True)

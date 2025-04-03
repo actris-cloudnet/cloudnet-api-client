@@ -3,6 +3,7 @@ import calendar
 import datetime
 import os
 import re
+import uuid
 from dataclasses import fields, is_dataclass
 from os import PathLike
 from pathlib import Path
@@ -18,7 +19,6 @@ from cloudnet_api_client.containers import (
     SITE_TYPE,
     STATUS,
     Instrument,
-    Metadata,
     Product,
     ProductMetadata,
     RawMetadata,
@@ -27,10 +27,11 @@ from cloudnet_api_client.containers import (
 from cloudnet_api_client.dl import download_files
 
 T = TypeVar("T")
+MetadataList = list[ProductMetadata] | list[RawMetadata]
+TMetadata = TypeVar("TMetadata", ProductMetadata, RawMetadata)
 DateParam = str | datetime.date | None
 DateTimeParam = str | datetime.datetime | datetime.date | None
 QueryParam = str | list[str] | None
-MetadataList = list[ProductMetadata] | list[RawMetadata]
 
 
 class APIClient:
@@ -65,7 +66,7 @@ class APIClient:
                 instrument_id=obj["instrument"]["id"],
                 model=obj["model"],
                 type=obj["type"],
-                uuid=obj["uuid"],
+                uuid=uuid.UUID(obj["uuid"]),
                 pid=obj["pid"],
                 owners=obj["owners"],
                 serial_number=obj["serialNumber"],
@@ -178,12 +179,12 @@ class APIClient:
 
     @staticmethod
     def filter(
-        metadata: list[Metadata],
+        metadata: list[TMetadata],
         include_pattern: str | None = None,
         exclude_pattern: str | None = None,
         include_tag_subset: set[str] | None = None,
         exclude_tag_subset: set[str] | None = None,
-    ) -> list[Metadata]:
+    ) -> list[TMetadata]:
         if include_pattern:
             metadata = [
                 m for m in metadata if re.search(include_pattern, m.filename, re.I)
@@ -332,8 +333,11 @@ def _build_objects(res: list[dict], object_type: type[T]) -> list[T]:
     return cast(list[T], objects)
 
 
+CONVERTED = {"measurement_date", "created_at", "updated_at", "size", "uuid"}
+
+
 def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
-    field_names = {f.name for f in fields(ProductMetadata)} - {"product"}
+    field_names = {f.name for f in fields(ProductMetadata)} - CONVERTED - {"product"}
     return [
         ProductMetadata(
             **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
@@ -343,13 +347,18 @@ def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
                 type=[obj["product"]["type"][1:-1]],
                 experimental=obj["product"]["experimental"],
             ),
+            measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
+            created_at=datetime.datetime.fromisoformat(obj["createdAt"]),
+            updated_at=datetime.datetime.fromisoformat(obj["updatedAt"]),
+            size=int(obj["size"]),
+            uuid=uuid.UUID(obj["uuid"]),
         )
         for obj in res
     ]
 
 
 def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
-    field_names = {f.name for f in fields(RawMetadata)} - {"instrument"}
+    field_names = {f.name for f in fields(RawMetadata)} - CONVERTED - {"instrument"}
     return [
         RawMetadata(
             **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
@@ -357,12 +366,17 @@ def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
                 instrument_id=obj["instrumentInfo"]["instrumentId"],
                 model=obj["instrumentInfo"]["model"],
                 type=obj["instrumentInfo"]["type"],
-                uuid=obj["instrumentInfo"]["uuid"],
+                uuid=uuid.UUID(obj["instrumentInfo"]["uuid"]),
                 pid=obj["instrumentInfo"]["pid"],
                 owners=obj["instrumentInfo"]["owners"],
                 serial_number=obj["instrumentInfo"]["serialNumber"],
                 name=obj["instrumentInfo"]["name"],
             ),
+            measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
+            created_at=datetime.datetime.fromisoformat(obj["createdAt"]),
+            updated_at=datetime.datetime.fromisoformat(obj["updatedAt"]),
+            size=int(obj["size"]),
+            uuid=uuid.UUID(obj["uuid"]),
         )
         for obj in res
     ]

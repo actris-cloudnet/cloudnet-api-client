@@ -84,13 +84,15 @@ Additional filtering of fetched metadata.
 
 Parameters:
 
-| name               | type                                           | default |
-| ------------------ | ---------------------------------------------- | ------- |
-| metadata           | `list[RawMetadata]` or `list[ProductMetadata]` |         |
-| include_pattern    | `str`                                          | `None`  |
-| exclude_pattern    | `str`                                          | `None`  |
-| include_tag_subset | `set[str]`                                     | `None`  |
-| exclude_tag_subset | `set[str]`                                     | `None`  |
+| name                 | type                                           | default |
+| -------------------- | ---------------------------------------------- | ------- |
+| metadata             | `list[RawMetadata]` or `list[ProductMetadata]` |         |
+| include_pattern      | `str`                                          | `None`  |
+| exclude_pattern      | `str`                                          | `None`  |
+| include_tag_subset\* | `set[str]`                                     | `None`  |
+| exclude_tag_subset\* | `set[str]`                                     | `None`  |
+
+\* = only with `RawMetadata`
 
 ### `APIClient().sites()` &rarr; `list[Site]`
 
