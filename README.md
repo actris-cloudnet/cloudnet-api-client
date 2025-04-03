@@ -22,10 +22,10 @@ sites = client.sites(type="cloudnet")
 products = client.products()
 
 metadata = client.metadata("hyytiala", "2021-01-01", product=["mwr", "radar"])
-cac.download(metadata, "data/")
+client.download(metadata, "data/")
 
 raw_metadata = client.raw_metadata("granada", date="2024-01", instrument_id="parsivel")
-cac.download(raw_metadata, "data_raw/")
+client.download(raw_metadata, "data_raw/")
 ```
 
 ## Documentation
