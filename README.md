@@ -51,6 +51,7 @@ Parameters:
 | show_legacy\*       | `bool`                      | `False` |                                                      |
 | filename_prefix\*\* | `str` or `list[str]`        | `None`  | "stare"                                              |
 | filename_suffix\*\* | `str` or `list[str]`        | `None`  | ".lv1"                                               |
+| status\*\*          | `str` or `list[str]`        | `None`  | "created", "uploaded", "processed" or "invalid"      |
 
 \* = only in `metadata()`
 
