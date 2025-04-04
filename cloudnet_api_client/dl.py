@@ -61,6 +61,7 @@ async def _download_file_with_retries(
             logging.warning(f"Attempt {attempt} failed for {url}: {e}")
             if attempt == max_retries:
                 logging.error(f"Giving up on {url} after {max_retries} attempts.")
+                raise e
             else:
                 # Exponential backoff before retrying
                 await asyncio.sleep(2**attempt)
