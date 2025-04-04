@@ -19,16 +19,18 @@ from cloudnet_api_client.containers import (
     SITE_TYPE,
     STATUS,
     Instrument,
+    Model,
     Product,
     ProductMetadata,
     RawMetadata,
+    RawModelMetadata,
     Site,
 )
 from cloudnet_api_client.dl import download_files
 
 T = TypeVar("T")
-MetadataList = list[ProductMetadata] | list[RawMetadata]
-TMetadata = TypeVar("TMetadata", ProductMetadata, RawMetadata)
+MetadataList = list[ProductMetadata] | list[RawMetadata] | list[RawModelMetadata]
+TMetadata = TypeVar("TMetadata", ProductMetadata, RawMetadata, RawModelMetadata)
 DateParam = str | datetime.date | None
 DateTimeParam = str | datetime.datetime | datetime.date | None
 QueryParam = str | list[str] | None
@@ -153,6 +155,34 @@ class APIClient:
         )
         res = self._get_response("raw-files", params)
         return _build_raw_meta_objects(res)
+
+    def raw_model_metadata(
+        self,
+        site_id: str,
+        model_id: QueryParam = None,
+        date: DateParam = None,
+        date_from: DateParam = None,
+        date_to: DateParam = None,
+        updated_at: DateTimeParam = None,
+        updated_at_from: DateTimeParam = None,
+        updated_at_to: DateTimeParam = None,
+        filename_prefix: QueryParam = None,
+        filename_suffix: QueryParam = None,
+        status: STATUS | list[STATUS] | None = None,
+    ) -> list[RawModelMetadata]:
+        """For internal CLU use only. Will change in the future."""
+        params = {
+            "site": site_id,
+            "filenamePrefix": filename_prefix,
+            "filenameSuffix": filename_suffix,
+            "status": status,
+            "model": model_id,
+        }
+        _add_date_params(
+            params, date, date_from, date_to, updated_at, updated_at_from, updated_at_to
+        )
+        res = self._get_response("raw-model-files", params)
+        return _build_raw_model_meta_objects(res)
 
     def download(
         self,
@@ -380,6 +410,33 @@ def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
                 owners=obj["instrumentInfo"]["owners"],
                 serial_number=obj["instrumentInfo"]["serialNumber"],
                 name=obj["instrumentInfo"]["name"],
+            ),
+            measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
+            created_at=datetime.datetime.fromisoformat(obj["createdAt"]),
+            updated_at=datetime.datetime.fromisoformat(obj["updatedAt"]),
+            size=int(obj["size"]),
+            uuid=uuid.UUID(obj["uuid"]),
+        )
+        for obj in res
+    ]
+
+
+def _build_raw_model_meta_objects(res: list[dict]) -> list[RawModelMetadata]:
+    field_names = {f.name for f in fields(RawModelMetadata)} - CONVERTED - {"model"}
+    return [
+        RawModelMetadata(
+            **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
+            model=Model(
+                model_id=obj["model"]["id"],
+                name=obj["model"]["humanReadableName"],
+                optimum_order=int(obj["model"]["optimumOrder"]),
+                source_model_id=obj["model"]["sourceModelId"],
+                forecast_start=int(obj["model"]["forecastStart"])
+                if obj["model"]["forecastStart"] is not None
+                else None,
+                forecast_end=int(obj["model"]["forecastEnd"])
+                if obj["model"]["forecastEnd"] is not None
+                else None,
             ),
             measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
             created_at=datetime.datetime.fromisoformat(obj["createdAt"]),

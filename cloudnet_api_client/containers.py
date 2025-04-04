@@ -46,6 +46,16 @@ class Instrument:
 
 
 @dataclass(frozen=True, slots=True)
+class Model:
+    model_id: str
+    name: str
+    optimum_order: int
+    source_model_id: str
+    forecast_start: int | None
+    forecast_end: int | None
+
+
+@dataclass(frozen=True, slots=True)
 class Metadata:
     uuid: uuid.UUID
     checksum: str
@@ -62,6 +72,12 @@ class RawMetadata(Metadata):
     status: STATUS
     instrument: Instrument
     tags: list[str] | None
+
+
+@dataclass(frozen=True, slots=True)
+class RawModelMetadata(Metadata):
+    status: STATUS
+    model: Model
 
 
 @dataclass(frozen=True, slots=True)

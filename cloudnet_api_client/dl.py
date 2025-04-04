@@ -7,12 +7,16 @@ from tqdm import tqdm
 from tqdm.asyncio import tqdm_asyncio
 
 from cloudnet_api_client import utils
-from cloudnet_api_client.containers import ProductMetadata, RawMetadata
+from cloudnet_api_client.containers import (
+    ProductMetadata,
+    RawMetadata,
+    RawModelMetadata,
+)
 
 
 async def download_files(
     base_url: str,
-    metadata: list[ProductMetadata] | list[RawMetadata],
+    metadata: list[ProductMetadata] | list[RawMetadata] | list[RawModelMetadata],
     output_path: Path,
     concurrency_limit: int,
     disable_progress: bool | None,
@@ -93,7 +97,7 @@ async def _download_file(
 
 
 def _file_checksum_matches(
-    meta: ProductMetadata | RawMetadata, destination: Path
+    meta: ProductMetadata | RawMetadata | RawModelMetadata, destination: Path
 ) -> bool:
-    fun = utils.md5sum if isinstance(meta, RawMetadata) else utils.sha256sum
+    fun = utils.sha256sum if isinstance(meta, ProductMetadata) else utils.md5sum
     return fun(destination) == meta.checksum
