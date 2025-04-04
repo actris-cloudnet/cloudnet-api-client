@@ -14,9 +14,9 @@ python3 -m pip install cloudnet-api-client
 ## Quickstart
 
 ```python
-import cloudnet_api_client as cac
+from cloudnet_api_client import APIClient
 
-client = cac.APIClient()
+client = APIClient()
 
 sites = client.sites(type="cloudnet")
 products = client.products()
