@@ -30,7 +30,7 @@ async def download_files(
             destination = output_path / meta.download_url.split("/")[-1]
             full_paths.append(destination)
             if destination.exists() and _file_checksum_matches(meta, destination):
-                logging.info(f"Already downloaded: {destination}")
+                logging.debug(f"Already downloaded: {destination}")
                 continue
             task = asyncio.create_task(
                 _download_file_with_retries(
@@ -94,7 +94,7 @@ async def _download_file(
                         break
                     file_out.write(chunk)
                     bar.update(len(chunk))
-        logging.info(f"Downloaded: {destination}")
+        logging.debug(f"Downloaded: {destination}")
 
 
 def _file_checksum_matches(
