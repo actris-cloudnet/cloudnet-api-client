@@ -270,13 +270,13 @@ def _add_date_params(
         msg = "Cannot use 'date' with 'date_from' and 'date_to'"
         raise ValueError(msg)
     if date is not None:
-        start, stop = _parse_date(date)
+        start, stop = _parse_date_param(date)
         params["dateFrom"] = start.isoformat()
         params["dateTo"] = stop.isoformat()
     if date_from is not None:
-        params["dateFrom"] = _parse_date(date_from)[0].isoformat()
+        params["dateFrom"] = _parse_date_param(date_from)[0].isoformat()
     if date_to is not None:
-        params["dateTo"] = _parse_date(date_to)[1].isoformat()
+        params["dateTo"] = _parse_date_param(date_to)[1].isoformat()
 
     if updated_at is not None and (
         updated_at_from is not None or updated_at_to is not None
@@ -284,16 +284,16 @@ def _add_date_params(
         msg = "Cannot use 'updated_at' with 'updated_at_from' and 'updated_at_to'"
         raise ValueError(msg)
     if updated_at is not None:
-        start, stop = _parse_datetime(updated_at)
+        start, stop = _parse_datetime_param(updated_at)
         params["updatedAtFrom"] = start.isoformat()
         params["updatedAtTo"] = stop.isoformat()
     if updated_at_from is not None:
-        params["updatedAtFrom"] = _parse_datetime(updated_at_from)[0].isoformat()
+        params["updatedAtFrom"] = _parse_datetime_param(updated_at_from)[0].isoformat()
     if updated_at_to is not None:
-        params["updatedAtTo"] = _parse_datetime(updated_at_to)[1].isoformat()
+        params["updatedAtTo"] = _parse_datetime_param(updated_at_to)[1].isoformat()
 
 
-def _parse_date(date: DateParam) -> tuple[datetime.date, datetime.date]:
+def _parse_date_param(date: DateParam) -> tuple[datetime.date, datetime.date]:
     if isinstance(date, datetime.date):
         return date, date
     error = ValueError(f"Invalid date format: {date}")
@@ -316,7 +316,9 @@ def _parse_date(date: DateParam) -> tuple[datetime.date, datetime.date]:
     raise error
 
 
-def _parse_datetime(dt: DateTimeParam) -> tuple[datetime.datetime, datetime.datetime]:
+def _parse_datetime_param(
+    dt: DateTimeParam,
+) -> tuple[datetime.datetime, datetime.datetime]:
     if isinstance(dt, datetime.datetime):
         return dt, dt
     if isinstance(dt, datetime.date):
@@ -387,8 +389,8 @@ def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
                 experimental=obj["product"]["experimental"],
             ),
             measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
-            created_at=datetime.datetime.fromisoformat(obj["createdAt"]),
-            updated_at=datetime.datetime.fromisoformat(obj["updatedAt"]),
+            created_at=_parse_datetime(obj["createdAt"]),
+            updated_at=_parse_datetime(obj["updatedAt"]),
             size=int(obj["size"]),
             uuid=uuid.UUID(obj["uuid"]),
         )
@@ -412,8 +414,8 @@ def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
                 name=obj["instrumentInfo"]["name"],
             ),
             measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
-            created_at=datetime.datetime.fromisoformat(obj["createdAt"]),
-            updated_at=datetime.datetime.fromisoformat(obj["updatedAt"]),
+            created_at=_parse_datetime(obj["createdAt"]),
+            updated_at=_parse_datetime(obj["updatedAt"]),
             size=int(obj["size"]),
             uuid=uuid.UUID(obj["uuid"]),
         )
@@ -439,8 +441,8 @@ def _build_raw_model_meta_objects(res: list[dict]) -> list[RawModelMetadata]:
                 else None,
             ),
             measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
-            created_at=datetime.datetime.fromisoformat(obj["createdAt"]),
-            updated_at=datetime.datetime.fromisoformat(obj["updatedAt"]),
+            created_at=_parse_datetime(obj["createdAt"]),
+            updated_at=_parse_datetime(obj["updatedAt"]),
             size=int(obj["size"]),
             uuid=uuid.UUID(obj["uuid"]),
         )
@@ -459,3 +461,7 @@ def _make_session() -> requests.Session:
     session.mount("https://", adapter)
     session.mount("http://", adapter)
     return session
+
+
+def _parse_datetime(dt: str) -> datetime.datetime:
+    return datetime.datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S.%fZ")
