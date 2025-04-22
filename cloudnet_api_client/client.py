@@ -378,16 +378,46 @@ CONVERTED = {"measurement_date", "created_at", "updated_at", "size", "uuid"}
 
 
 def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
-    field_names = {f.name for f in fields(ProductMetadata)} - CONVERTED - {"product"}
+    field_names = (
+        {f.name for f in fields(ProductMetadata)}
+        - CONVERTED
+        - {"product", "instrument", "model"}
+    )
     return [
         ProductMetadata(
             **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
             product=Product(
                 id=obj["product"]["id"],
                 human_readable_name=obj["product"]["humanReadableName"],
-                type=[obj["product"]["type"][1:-1]],
+                type=obj["product"]["type"],
                 experimental=obj["product"]["experimental"],
             ),
+            instrument=Instrument(
+                instrument_id=obj["instrument"]["instrumentId"],
+                model=obj["instrument"]["model"],
+                type=obj["instrument"]["type"],
+                uuid=uuid.UUID(obj["instrument"]["uuid"]),
+                pid=obj["instrument"]["pid"],
+                owners=obj["instrument"]["owners"],
+                serial_number=obj["instrument"]["serialNumber"],
+                name=obj["instrument"]["name"],
+            )
+            if "instrument" in obj and obj["instrument"] is not None
+            else None,
+            model=Model(
+                model_id=obj["model"]["id"],
+                name=obj["model"]["humanReadableName"],
+                optimum_order=obj["model"]["optimumOrder"],
+                source_model_id=obj["model"]["sourceModelId"],
+                forecast_start=obj["model"]["forecastStart"]
+                if obj["model"]["forecastStart"] is not None
+                else None,
+                forecast_end=obj["model"]["forecastEnd"]
+                if obj["model"]["forecastEnd"] is not None
+                else None,
+            )
+            if "model" in obj and obj["model"] is not None
+            else None,
             measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
             created_at=_parse_datetime(obj["createdAt"]),
             updated_at=_parse_datetime(obj["updatedAt"]),

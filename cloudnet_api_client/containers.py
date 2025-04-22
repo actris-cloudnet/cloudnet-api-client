@@ -83,3 +83,5 @@ class RawModelMetadata(Metadata):
 @dataclass(frozen=True, slots=True)
 class ProductMetadata(Metadata):
     product: Product
+    instrument: Instrument | None
+    model: Model | None
