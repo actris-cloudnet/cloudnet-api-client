@@ -38,7 +38,7 @@ Parameters:
 
 | name                | type                        | default | example                                              |
 | ------------------- | --------------------------- | ------- | ---------------------------------------------------- |
-| site_id             | `str`                       |         | "hyytiala"                                           |
+| site_id             | `str` or `list[str]`        | `None`  | "hyytiala"                                           |
 | date                | `str` or `date`             | `None`  | "2024-01-01"                                         |
 | date_from           | `str` or `date`             | `None`  | "2025-01-01"                                         |
 | date_to             | `str` or `date`             | `None`  | "2025-01-01"                                         |

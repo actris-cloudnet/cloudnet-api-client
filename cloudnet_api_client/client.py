@@ -85,7 +85,7 @@ class APIClient:
 
     def metadata(
         self,
-        site_id: str,
+        site_id: QueryParam = None,
         date: DateParam = None,
         date_from: DateParam = None,
         date_to: DateParam = None,
@@ -108,6 +108,9 @@ class APIClient:
         _add_date_params(
             params, date, date_from, date_to, updated_at, updated_at_from, updated_at_to
         )
+
+        _check_params(params, ("showLegacy",))
+
         no_instrument = not instrument_id or instrument_pid
         if no_instrument and (not product and model_id):
             files_res = []
@@ -129,7 +132,7 @@ class APIClient:
 
     def raw_metadata(
         self,
-        site_id: str,
+        site_id: QueryParam = None,
         date: DateParam = None,
         date_from: DateParam = None,
         date_to: DateParam = None,
@@ -181,6 +184,9 @@ class APIClient:
         _add_date_params(
             params, date, date_from, date_to, updated_at, updated_at_from, updated_at_to
         )
+
+        _check_params(params)
+
         res = self._get_response("raw-model-files", params)
         return _build_raw_model_meta_objects(res)
 
@@ -504,3 +510,8 @@ def _make_session() -> requests.Session:
 
 def _parse_datetime(dt: str) -> datetime.datetime:
     return datetime.datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def _check_params(params: dict, ignore: tuple = ()) -> None:
+    if sum(1 for key, value in params.items() if key not in ignore and value) == 0:
+        raise TypeError("At least one of the parameters must be set.")
