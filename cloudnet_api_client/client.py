@@ -190,9 +190,16 @@ class APIClient:
         output_directory: str | PathLike,
         concurrency_limit: int = 5,
         progress: bool | None = None,
+        validate_checksum: bool = False,
     ) -> list[Path]:
         return asyncio.run(
-            self.adownload(metadata, output_directory, concurrency_limit, progress)
+            self.adownload(
+                metadata,
+                output_directory,
+                concurrency_limit,
+                progress,
+                validate_checksum,
+            )
         )
 
     async def adownload(
@@ -201,6 +208,7 @@ class APIClient:
         output_directory: str | PathLike,
         concurrency_limit: int = 5,
         progress: bool | None = None,
+        validate_checksum: bool = False,
     ) -> list[Path]:
         disable_progress = not progress if progress is not None else None
         output_directory = Path(output_directory).resolve()
@@ -211,6 +219,7 @@ class APIClient:
             output_directory,
             concurrency_limit,
             disable_progress,
+            validate_checksum,
         )
 
     @staticmethod

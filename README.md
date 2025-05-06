@@ -131,6 +131,7 @@ Parameters:
 | output_directory  | `PathLike` or `str`                            |         |
 | concurrency_limit | `int`                                          | 5       |
 | progress          | `bool` or `None`                               | `None`  |
+| validate_checksum | `bool`                                         | `False` |
 
 There's also an asynchronous version of this function:
 `cloudnet_api_client.adownload`. It's useful for usage inside Jupyter notebook.

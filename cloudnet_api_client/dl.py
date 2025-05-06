@@ -20,7 +20,9 @@ async def download_files(
     output_path: Path,
     concurrency_limit: int,
     disable_progress: bool | None,
+    validate_checksum: bool = False,
 ) -> list[Path]:
+    file_exists = _checksum_matches if validate_checksum else _size_and_name_matches
     semaphore = asyncio.Semaphore(concurrency_limit)
     full_paths = []
     async with aiohttp.ClientSession() as session:
@@ -29,7 +31,7 @@ async def download_files(
             download_url = f"{base_url}{meta.download_url.split('/api/')[-1]}"
             destination = output_path / meta.download_url.split("/")[-1]
             full_paths.append(destination)
-            if destination.exists() and _file_checksum_matches(meta, destination):
+            if destination.exists() and file_exists(meta, destination):
                 logging.debug(f"Already downloaded: {destination}")
                 continue
             task = asyncio.create_task(
@@ -97,8 +99,17 @@ async def _download_file(
         logging.debug(f"Downloaded: {destination}")
 
 
-def _file_checksum_matches(
+def _checksum_matches(
     meta: ProductMetadata | RawMetadata | RawModelMetadata, destination: Path
 ) -> bool:
     fun = utils.sha256sum if isinstance(meta, ProductMetadata) else utils.md5sum
     return fun(destination) == meta.checksum
+
+
+def _size_and_name_matches(
+    meta: ProductMetadata | RawMetadata | RawModelMetadata, destination: Path
+) -> bool:
+    return (
+        destination.stat().st_size == meta.size
+        and destination.name == meta.download_url.split("/")[-1]
+    )
