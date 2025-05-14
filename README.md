@@ -31,7 +31,7 @@ file_paths = client.download(raw_metadata, "data_raw/")
 When downloading files inside Jupyter notebook (or similar environment), you have to use the asynchronous version:
 
 ```python
-file_paths = await client.adownload(metadata, "data/")
+file_paths = await client.adownload(metadata)
 ```
 
 ## Documentation
@@ -131,13 +131,13 @@ Download files from the fetched metadata.
 
 Parameters:
 
-| name              | type                                           | default |
-| ----------------- | ---------------------------------------------- | ------- |
-| metadata          | `list[RawMetadata]` or `list[ProductMetadata]` |         |
-| output_directory  | `PathLike` or `str`                            |         |
-| concurrency_limit | `int`                                          | 5       |
-| progress          | `bool` or `None`                               | `None`  |
-| validate_checksum | `bool`                                         | `False` |
+| name              | type                                           | default           |
+| ----------------- | ---------------------------------------------- | ----------------- |
+| metadata          | `list[RawMetadata]` or `list[ProductMetadata]` |                   |
+| output_directory  | `PathLike` or `str`                            | Current directory |
+| concurrency_limit | `int`                                          | 5                 |
+| progress          | `bool` or `None`                               | `None`            |
+| validate_checksum | `bool`                                         | `False`           |
 
 There's also an asynchronous version of this function:
 `cloudnet_api_client.adownload`. It's useful for usage inside Jupyter notebook.

@@ -193,7 +193,7 @@ class APIClient:
     def download(
         self,
         metadata: MetadataList,
-        output_directory: str | PathLike,
+        output_directory: str | PathLike = ".",
         concurrency_limit: int = 5,
         progress: bool | None = None,
         validate_checksum: bool = False,
@@ -211,7 +211,7 @@ class APIClient:
     async def adownload(
         self,
         metadata: MetadataList,
-        output_directory: str | PathLike,
+        output_directory: str | PathLike = ".",
         concurrency_limit: int = 5,
         progress: bool | None = None,
         validate_checksum: bool = False,
