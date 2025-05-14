@@ -407,30 +407,10 @@ def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
                 type=obj["product"]["type"],
                 experimental=obj["product"]["experimental"],
             ),
-            instrument=Instrument(
-                instrument_id=obj["instrument"]["instrumentId"],
-                model=obj["instrument"]["model"],
-                type=obj["instrument"]["type"],
-                uuid=uuid.UUID(obj["instrument"]["uuid"]),
-                pid=obj["instrument"]["pid"],
-                owners=obj["instrument"]["owners"],
-                serial_number=obj["instrument"]["serialNumber"],
-                name=obj["instrument"]["name"],
-            )
+            instrument=_create_instrument_object(obj["instrument"])
             if "instrument" in obj and obj["instrument"] is not None
             else None,
-            model=Model(
-                model_id=obj["model"]["id"],
-                name=obj["model"]["humanReadableName"],
-                optimum_order=obj["model"]["optimumOrder"],
-                source_model_id=obj["model"]["sourceModelId"],
-                forecast_start=obj["model"]["forecastStart"]
-                if obj["model"]["forecastStart"] is not None
-                else None,
-                forecast_end=obj["model"]["forecastEnd"]
-                if obj["model"]["forecastEnd"] is not None
-                else None,
-            )
+            model=_create_model_object(obj["model"])
             if "model" in obj and obj["model"] is not None
             else None,
             measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
@@ -451,16 +431,7 @@ def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
     return [
         RawMetadata(
             **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
-            instrument=Instrument(
-                instrument_id=obj["instrumentInfo"]["instrumentId"],
-                model=obj["instrumentInfo"]["model"],
-                type=obj["instrumentInfo"]["type"],
-                uuid=uuid.UUID(obj["instrumentInfo"]["uuid"]),
-                pid=obj["instrumentInfo"]["pid"],
-                owners=obj["instrumentInfo"]["owners"],
-                serial_number=obj["instrumentInfo"]["serialNumber"],
-                name=obj["instrumentInfo"]["name"],
-            ),
+            instrument=_create_instrument_object(obj["instrumentInfo"]),
             measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
             created_at=_parse_datetime(obj["createdAt"]),
             updated_at=_parse_datetime(obj["updatedAt"]),
@@ -479,18 +450,7 @@ def _build_raw_model_meta_objects(res: list[dict]) -> list[RawModelMetadata]:
     return [
         RawModelMetadata(
             **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
-            model=Model(
-                model_id=obj["model"]["id"],
-                name=obj["model"]["humanReadableName"],
-                optimum_order=int(obj["model"]["optimumOrder"]),
-                source_model_id=obj["model"]["sourceModelId"],
-                forecast_start=int(obj["model"]["forecastStart"])
-                if obj["model"]["forecastStart"] is not None
-                else None,
-                forecast_end=int(obj["model"]["forecastEnd"])
-                if obj["model"]["forecastEnd"] is not None
-                else None,
-            ),
+            model=_create_model_object(obj["model"]),
             measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
             created_at=_parse_datetime(obj["createdAt"]),
             updated_at=_parse_datetime(obj["updatedAt"]),
@@ -500,6 +460,21 @@ def _build_raw_model_meta_objects(res: list[dict]) -> list[RawModelMetadata]:
         )
         for obj in res
     ]
+
+
+def _create_model_object(metadata: dict) -> Model:
+    return Model(
+        model_id=metadata["id"],
+        name=metadata["humanReadableName"],
+        optimum_order=int(metadata["optimumOrder"]),
+        source_model_id=metadata["sourceModelId"],
+        forecast_start=int(metadata["forecastStart"])
+        if metadata["forecastStart"] is not None
+        else None,
+        forecast_end=int(metadata["forecastEnd"])
+        if metadata["forecastEnd"] is not None
+        else None,
+    )
 
 
 def _create_site_object(metadata: dict) -> Site:
@@ -517,6 +492,19 @@ def _create_site_object(metadata: dict) -> Site:
         country_subdivision_code=metadata["countrySubdivisionCode"],
         type=metadata["type"],
         gaw=metadata["gaw"],
+    )
+
+
+def _create_instrument_object(metadata: dict) -> Instrument:
+    return Instrument(
+        instrument_id=metadata["instrumentId"],
+        model=metadata["model"],
+        type=metadata["type"],
+        uuid=uuid.UUID(metadata["uuid"]),
+        pid=metadata["pid"],
+        owners=metadata["owners"],
+        serial_number=metadata["serialNumber"],
+        name=metadata["name"],
     )
 
 
