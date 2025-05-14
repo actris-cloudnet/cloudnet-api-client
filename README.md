@@ -31,7 +31,7 @@ file_paths = client.download(raw_metadata, "data_raw/")
 When downloading files inside Jupyter notebook (or similar environment), you have to use the asynchronous version:
 
 ```python
-file_paths = await client.adownload(metadata, "data_raw/")
+file_paths = await client.adownload(metadata, "data/")
 ```
 
 ## Documentation
