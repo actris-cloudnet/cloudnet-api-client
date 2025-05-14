@@ -22,16 +22,16 @@ sites = client.sites(type="cloudnet")
 products = client.products()
 
 metadata = client.metadata(site_id="hyytiala", date="2021-01-01", product=["mwr", "radar"])
-client.download(metadata, "data/")
+file_paths = client.download(metadata, "data/")
 
 raw_metadata = client.raw_metadata(site_id="granada", date="2024-01", instrument_id="parsivel")
-client.download(raw_metadata, "data_raw/")
+file_paths = client.download(raw_metadata, "data_raw/")
 ```
 
 When downloading files inside Jupyter notebook (or similar environment), you have to use the asynchronous version:
 
 ```python
-client.adownload(metadata, "data_raw/")
+file_paths = await client.adownload(metadata, "data_raw/")
 ```
 
 ## Documentation
