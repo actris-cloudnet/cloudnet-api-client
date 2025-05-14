@@ -161,7 +161,7 @@ class APIClient:
 
     def raw_model_metadata(
         self,
-        site_id: str,
+        site_id: QueryParam = None,
         model_id: QueryParam = None,
         date: DateParam = None,
         date_from: DateParam = None,
@@ -396,7 +396,7 @@ def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
     field_names = (
         {f.name for f in fields(ProductMetadata)}
         - CONVERTED
-        - {"product", "instrument", "model"}
+        - {"product", "instrument", "model", "site"}
     )
     return [
         ProductMetadata(
@@ -438,13 +438,16 @@ def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
             updated_at=_parse_datetime(obj["updatedAt"]),
             size=int(obj["size"]),
             uuid=uuid.UUID(obj["uuid"]),
+            site=_create_site_object(obj["site"]),
         )
         for obj in res
     ]
 
 
 def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
-    field_names = {f.name for f in fields(RawMetadata)} - CONVERTED - {"instrument"}
+    field_names = (
+        {f.name for f in fields(RawMetadata)} - CONVERTED - {"instrument", "site"}
+    )
     return [
         RawMetadata(
             **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
@@ -463,13 +466,16 @@ def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
             updated_at=_parse_datetime(obj["updatedAt"]),
             size=int(obj["size"]),
             uuid=uuid.UUID(obj["uuid"]),
+            site=_create_site_object(obj["site"]),
         )
         for obj in res
     ]
 
 
 def _build_raw_model_meta_objects(res: list[dict]) -> list[RawModelMetadata]:
-    field_names = {f.name for f in fields(RawModelMetadata)} - CONVERTED - {"model"}
+    field_names = (
+        {f.name for f in fields(RawModelMetadata)} - CONVERTED - {"model", "site"}
+    )
     return [
         RawModelMetadata(
             **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
@@ -490,9 +496,28 @@ def _build_raw_model_meta_objects(res: list[dict]) -> list[RawModelMetadata]:
             updated_at=_parse_datetime(obj["updatedAt"]),
             size=int(obj["size"]),
             uuid=uuid.UUID(obj["uuid"]),
+            site=_create_site_object(obj["site"]),
         )
         for obj in res
     ]
+
+
+def _create_site_object(metadata: dict) -> Site:
+    return Site(
+        id=metadata["id"],
+        human_readable_name=metadata["humanReadableName"],
+        station_name=metadata["stationName"],
+        latitude=float(metadata["latitude"]),
+        longitude=float(metadata["longitude"]),
+        altitude=float(metadata["altitude"]),
+        dvas_id=metadata["dvasId"],
+        actris_id=metadata["actrisId"],
+        country=metadata["country"],
+        country_code=metadata["countryCode"],
+        country_subdivision_code=metadata["countrySubdivisionCode"],
+        type=metadata["type"],
+        gaw=metadata["gaw"],
+    )
 
 
 def _to_snake(name: str) -> str:

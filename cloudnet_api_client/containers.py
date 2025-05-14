@@ -65,6 +65,7 @@ class Metadata:
     measurement_date: datetime.date
     created_at: datetime.datetime
     updated_at: datetime.datetime
+    site: Site
 
 
 @dataclass(frozen=True, slots=True)
