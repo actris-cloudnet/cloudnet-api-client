@@ -13,9 +13,9 @@ class Site:
     id: str
     human_readable_name: str
     station_name: str | None
-    latitude: float
-    longitude: float
-    altitude: float
+    latitude: float | None
+    longitude: float | None
+    altitude: int
     dvas_id: str | None
     actris_id: int | None
     country: str
