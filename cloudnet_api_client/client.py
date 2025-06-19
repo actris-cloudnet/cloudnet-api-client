@@ -111,17 +111,18 @@ class APIClient:
 
         _check_params(params, ("showLegacy",))
 
-        no_instrument = not instrument_id or instrument_pid
-        if no_instrument and (not product and model_id):
+        no_instrument = instrument_id is None and instrument_pid is None
+
+        if no_instrument and (product is None and model_id is not None):
             files_res = []
         else:
             files_res = self._get_response("files", params)
 
         # Add model files if requested
         if (
-            (not product and no_instrument)
-            or (product and "model" in product)
-            or (model_id and (not product or "model" in product))
+            (product is None and no_instrument)
+            or (product is not None and "model" in product)
+            or (model_id is not None and (product is None or "model" in product))
         ):
             for key in ("showLegacy", "product", "instrument", "instrumentPid"):
                 del params[key]
