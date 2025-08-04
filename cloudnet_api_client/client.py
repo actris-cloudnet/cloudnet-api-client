@@ -432,7 +432,7 @@ def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
     return [
         RawMetadata(
             **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
-            instrument=_create_instrument_object(obj["instrumentInfo"]),
+            instrument=_create_instrument_object(obj["instrument"]),
             measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
             created_at=_parse_datetime(obj["createdAt"]),
             updated_at=_parse_datetime(obj["updatedAt"]),
