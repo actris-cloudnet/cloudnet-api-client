@@ -10,9 +10,7 @@ services:
       - ../dataportal-fixtures:/dataportal-fixtures
       - ../backend-fixtures:/backend-fixtures
     env_file:
-      - test.env
-    environment:
-      - SS_MODE=remote
+      - dataportal.env
     command:
       [
         "sh",
@@ -25,11 +23,8 @@ services:
       - ./initdb.d:/docker-entrypoint-initdb.d
     ports:
       - "54321:54321"
-    environment:
-      TZ: "Europe/Helsinki"
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      PGUSER: admin
+    env_file:
+      - db.env
     healthcheck:
       test: ["CMD", "psql", "-c", "select 1"]
       interval: 1s
@@ -45,17 +40,6 @@ services:
         condition: service_healthy
       moto-server:
         condition: service_started
-    environment:
-      - NODE_ENV=test
-      - SS_USER=test
-      - SS_PWHASH=9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
-      - SS_MAXOBJECTSPERBUCKET=10000
-      - PGHOST=db
-      - PGDATABASE=ss
-      - PGUSER=ss
-      - PGPASSWORD=dev
-      - S3_ENDPOINT=http://moto-server:5000
-      - S3_ACCESSKEYID=dev
-      - S3_SECRETACCESSKEY=dev
-      - S3_FORCE_PATH_STYLE=true
+    env_file:
+      - ss.env
     command: ["sh", "-c", "node build/init.js && npm start"]
