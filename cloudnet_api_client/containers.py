@@ -86,3 +86,4 @@ class ProductMetadata(Metadata):
     product: Product
     instrument: Instrument | None
     model: Model | None
+    volatile: bool
