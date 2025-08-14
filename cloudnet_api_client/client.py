@@ -3,12 +3,12 @@ import calendar
 import datetime
 import os
 import re
-import uuid
 from dataclasses import fields, is_dataclass
 from os import PathLike
 from pathlib import Path
 from typing import TypeVar, cast
 from urllib.parse import urljoin
+from uuid import UUID
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -25,6 +25,7 @@ from cloudnet_api_client.containers import (
     RawMetadata,
     RawModelMetadata,
     Site,
+    VersionMetadata,
 )
 from cloudnet_api_client.dl import download_files
 
@@ -42,6 +43,8 @@ class APIClient:
         base_url: str = "https://cloudnet.fmi.fi/api/",
         session: requests.Session | None = None,
     ) -> None:
+        if not base_url.endswith("/"):
+            base_url += "/"
         self.base_url = base_url
         self.session = session or _make_session()
 
@@ -74,11 +77,36 @@ class APIClient:
                 instrument_id=obj["instrument"]["id"],
                 model=obj["model"],
                 type=obj["type"],
-                uuid=uuid.UUID(obj["uuid"]),
+                uuid=UUID(obj["uuid"]),
                 pid=obj["pid"],
                 owners=obj["owners"],
                 serial_number=obj["serialNumber"],
                 name=obj["name"],
+            )
+            for obj in res
+        ]
+
+    def file(
+        self,
+        uuid: str | UUID,
+    ) -> ProductMetadata:
+        res = self._get_response(f"files/{uuid}")
+        return _build_meta_objects(res)[0]
+
+    def versions(self, uuid: str | UUID) -> list[VersionMetadata]:
+        res = self._get_response(
+            f"files/{uuid}/versions",
+            {"properties": ["pid", "dvasId", "legacy", "size", "checksum"]},
+        )
+        return [
+            VersionMetadata(
+                uuid=UUID(obj["uuid"]),
+                created_at=_parse_datetime(obj["createdAt"]),
+                pid=obj["pid"],
+                dvas_id=obj["dvasId"],
+                legacy=obj["legacy"],
+                size=int(obj["size"]),
+                checksum=obj["checksum"],
             )
             for obj in res
         ]
@@ -105,6 +133,10 @@ class APIClient:
             "product": product,
             "showLegacy": show_legacy,
         }
+        if show_legacy is not True:
+            # API shows legacy files with any value (even <False>)
+            del params["showLegacy"]
+
         _add_date_params(
             params, date, date_from, date_to, updated_at, updated_at_from, updated_at_to
         )
@@ -125,7 +157,8 @@ class APIClient:
             or (model_id is not None and (product is None or "model" in product))
         ):
             for key in ("showLegacy", "product", "instrument", "instrumentPid"):
-                del params[key]
+                if key in params:
+                    del params[key]
             params["model"] = model_id
             files_res += self._get_response("model-files", params)
 
@@ -418,7 +451,7 @@ def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
             created_at=_parse_datetime(obj["createdAt"]),
             updated_at=_parse_datetime(obj["updatedAt"]),
             size=int(obj["size"]),
-            uuid=uuid.UUID(obj["uuid"]),
+            uuid=UUID(obj["uuid"]),
             site=_create_site_object(obj["site"]),
         )
         for obj in res
@@ -437,7 +470,7 @@ def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
             created_at=_parse_datetime(obj["createdAt"]),
             updated_at=_parse_datetime(obj["updatedAt"]),
             size=int(obj["size"]),
-            uuid=uuid.UUID(obj["uuid"]),
+            uuid=UUID(obj["uuid"]),
             site=_create_site_object(obj["site"]),
         )
         for obj in res
@@ -456,7 +489,7 @@ def _build_raw_model_meta_objects(res: list[dict]) -> list[RawModelMetadata]:
             created_at=_parse_datetime(obj["createdAt"]),
             updated_at=_parse_datetime(obj["updatedAt"]),
             size=int(obj["size"]),
-            uuid=uuid.UUID(obj["uuid"]),
+            uuid=UUID(obj["uuid"]),
             site=_create_site_object(obj["site"]),
         )
         for obj in res
@@ -498,10 +531,10 @@ def _create_site_object(metadata: dict) -> Site:
 
 def _create_instrument_object(metadata: dict) -> Instrument:
     return Instrument(
-        instrument_id=metadata["instrumentId"],
+        instrument_id=metadata.get("instrumentId"),  # not in api/files/:uuid
         model=metadata["model"],
         type=metadata["type"],
-        uuid=uuid.UUID(metadata["uuid"]),
+        uuid=UUID(metadata["uuid"]),
         pid=metadata["pid"],
         owners=metadata["owners"],
         serial_number=metadata["serialNumber"],

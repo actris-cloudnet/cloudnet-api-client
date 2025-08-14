@@ -35,7 +35,7 @@ class Product:
 
 @dataclass(frozen=True, slots=True)
 class Instrument:
-    instrument_id: str  # CLU internal identifier, e.g. "rpg-fmcw-94"
+    instrument_id: str | None  # CLU internal identifier, e.g. "rpg-fmcw-94"
     model: str  # From ACTRIS Vocabulary, e.g. "RPG-FMCW-94 DP"
     type: str  # From ACTRIS Vocabulary, e.g. "Doppler non-scanning cloud radar"
     name: str  # e.g. "FMI RPG-FMCW-94 (Pallas)"
@@ -87,3 +87,23 @@ class ProductMetadata(Metadata):
     instrument: Instrument | None
     model: Model | None
     volatile: bool
+    legacy: bool
+    pid: str
+    dvas_id: str | None
+    error_level: str | None
+    coverage: float
+    timeliness: str
+    format: str
+    start_time: datetime.datetime | None
+    stop_time: datetime.datetime | None
+
+
+@dataclass(frozen=True, slots=True)
+class VersionMetadata:
+    uuid: uuid.UUID
+    created_at: datetime.datetime
+    pid: str
+    checksum: str
+    legacy: bool
+    size: int
+    dvas_id: str | None

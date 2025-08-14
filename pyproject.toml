@@ -22,7 +22,7 @@ dependencies = ["aiohttp", "numpy", "requests", "tqdm"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-test = ["mypy", "pytest"]
+test = ["mypy", "netCDF4", "pytest"]
 dev = ["pre-commit", "release-version", "types-requests", "types-tqdm"]
 
 [tool.hatch.version]

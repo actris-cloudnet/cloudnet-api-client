@@ -101,13 +101,33 @@ Parameters:
 
 \* = only with `RawMetadata`
 
+### `APIClient().file()` &rarr; `ProductMetadata`
+
+Fetch metadata of a single file.
+
+Parameters:
+
+| name | type                 |
+| ---- | -------------------- |
+| uuid | `str` or `uuid.UUID` |
+
+### `APIClient().versions()` &rarr; `list[VersionMetadata]`
+
+Fetch information of all versions of a file.
+
+Parameters:
+
+| name | type                 |
+| ---- | -------------------- |
+| uuid | `str` or `uuid.UUID` |
+
 ### `APIClient().sites()` &rarr; `list[Site]`
 
 Fetch cloudnet sites.
 
 Parameters:
 
-| name    | type                 | Choices                                   | default |
+| name    | type                 | choices                                   | default |
 | ------- | -------------------- | ----------------------------------------- | ------- |
 | site_id | `str`                |                                           | `None`  |
 | type    | `str` or `list[str]` | "cloudnet", "campaign", "model", "hidden" | `None`  |
@@ -118,7 +138,7 @@ Fetch cloudnet products.
 
 Parameters:
 
-| name | type                 | Choices                                   | default |
+| name | type                 | choices                                   | default |
 | ---- | -------------------- | ----------------------------------------- | ------- |
 | type | `str` or `list[str]` | "instrument", "geophysical", "evaluation" | `None`  |
 
