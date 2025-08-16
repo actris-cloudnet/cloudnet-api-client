@@ -22,11 +22,14 @@ dependencies = ["aiohttp", "numpy", "requests", "tqdm"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-test = ["mypy", "netCDF4", "pytest"]
+test = ["mypy", "netCDF4", "pytest", "pytest-asyncio"]
 dev = ["pre-commit", "release-version", "types-requests", "types-tqdm"]
 
 [tool.hatch.version]
 path = "cloudnet_api_client/version.py"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
 
 [tool.release-version]
 filename = "cloudnet_api_client/version.py"

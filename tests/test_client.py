@@ -1,3 +1,4 @@
+import datetime
 import os
 from pathlib import Path
 from typing import NamedTuple
@@ -116,10 +117,48 @@ class TestBasicMetadata:
         assert products
         assert isinstance(products[0], Product)
 
+    def test_product_type_filter(self, client: APIClient):
+        products = client.products("instrument")
+        assert all(product.type == ["instrument"] for product in products)
+
+    def test_product_type_filter_combo(self, client: APIClient):
+        products = client.products(["instrument", "geophysical"])
+        assert all(
+            product.type in [["instrument"], ["geophysical"]] for product in products
+        )
+
     def test_instruments(self, client: APIClient):
         instruments = client.instruments()
         assert instruments
         assert isinstance(instruments[0], Instrument)
+
+
+class TestDateParameterHandling:
+    """Test various date parameter formats and edge cases."""
+
+    def test_date_string_formats(self, client: APIClient):
+        meta1 = client.raw_metadata(date="2025-08-01")
+        meta2 = client.raw_metadata(date="2025-8-1")
+        assert len(meta1) == len(meta2)
+
+    def test_date_object_parameter(self, client: APIClient):
+        date_obj = datetime.date(2025, 8, 1)
+        meta = client.raw_metadata(date=date_obj)
+        assert len(meta) >= 0
+
+    def test_datetime_parameter(self, client: APIClient):
+        datetime_obj = datetime.datetime(2025, 8, 1, 12, 30)
+        meta = client.raw_metadata(updated_at=datetime_obj)
+        assert len(meta) >= 0
+
+    def test_invalid_date_format(self, client: APIClient):
+        with pytest.raises(ValueError):
+            client.raw_metadata(date="invalid-date")
+
+    def test_date_range_validation(self, client: APIClient):
+        # date_from > date_to should return empty results
+        meta = client.raw_metadata(date_from="2025-08-10", date_to="2025-08-01")
+        assert len(meta) == 0
 
 
 class TestRawMetadata:
@@ -166,10 +205,47 @@ class TestRawMetadata:
         meta = client.raw_metadata(instrument_id="weather-station")
         assert len(meta) == 1
 
+    def test_instrument_id_vs_pid_exclusivity(self, client: APIClient):
+        meta1 = client.raw_metadata(instrument_id="chm15k")
+        pid = "https://hdl.handle.net/21.12132/3.c60c931fac9d43f0"
+        meta2 = client.raw_metadata(instrument_pid=pid)
+        assert len(meta1) > 1  # Multiple chm15k files
+        assert len(meta2) == 1  # Specific PID
+
+    def test_malformed_pid(self, client: APIClient):
+        meta = client.raw_metadata(instrument_pid="not-a-valid-pid")
+        assert len(meta) == 0
+
+
+class TestDownloadingFunctionality:
     def test_downloading(self, client: APIClient, tmp_path: Path):
         meta = client.raw_metadata(date_from="2025-08-01")
         assert len(meta) == 3
         paths = client.download(meta, output_directory=tmp_path, progress=False)
+        assert len(paths) == 3
+        for path in paths:
+            assert path.exists()
+
+    def test_download_with_custom_directory(self, client: APIClient, tmp_path: Path):
+        meta = client.raw_metadata(date="2025-08-01", site_id="bucharest")
+        custom_dir = tmp_path / "custom" / "nested"
+        paths = client.download(meta, output_directory=custom_dir, progress=False)
+        assert len(paths) == 1
+        assert paths[0].parent == custom_dir
+        assert paths[0].exists()
+
+    def test_download_existing_file_skip(self, client: APIClient, tmp_path: Path):
+        meta = client.raw_metadata(date="2025-08-01", site_id="bucharest")
+        paths1 = client.download(meta, output_directory=tmp_path, progress=False)
+        original_size = paths1[0].stat().st_size
+        paths2 = client.download(meta, output_directory=tmp_path, progress=False)
+        assert paths1 == paths2
+        assert paths2[0].stat().st_size == original_size
+
+    async def test_async_download(self, client: APIClient, tmp_path: Path):
+        meta = client.raw_metadata(date_from="2025-08-01")
+        assert len(meta) == 3
+        paths = await client.adownload(meta, output_directory=tmp_path, progress=False)
         assert len(paths) == 3
         for path in paths:
             assert path.exists()
@@ -206,6 +282,26 @@ class TestProductMeta:
         assert len(paths) == 2
         for path in paths:
             assert path.exists()
+
+
+class TestFilterCombinations:
+    def test_multiple_filters_combined(self, client: APIClient):
+        meta = client.raw_metadata(
+            site_id="bucharest",
+            instrument_id="chm15k",
+            date_from="2025-08-01",
+            date_to="2025-08-01",
+        )
+        assert len(meta) == 1
+        assert meta[0].site.id == "bucharest"
+
+    def test_contradictory_filters(self, client: APIClient):
+        meta = client.raw_metadata(site_id="bucharest", instrument_id="weather-station")
+        assert len(meta) == 0
+
+    def test_partial_filename_matches(self, client: APIClient):
+        meta = client.raw_metadata(filename_prefix="2025", filename_suffix=".nc")
+        assert len(meta) == 2
 
 
 def _submit_product_file(backend_url: str, data_path: Path, meta: File):
