@@ -18,14 +18,25 @@ from cloudnet_api_client import APIClient
 
 client = APIClient()
 
-sites = client.sites(type="cloudnet")
+sites = client.sites()
+site = client.site("hyytiala")
+
 products = client.products()
+product = client.products("classification")
 
-metadata = client.metadata(site_id="hyytiala", date="2021-01-01", product=["mwr", "radar"])
-file_paths = client.download(metadata, "data/")
+models = client.models()
+model = client.model("ecmwf-open")
 
-raw_metadata = client.raw_metadata(site_id="granada", date="2024-01", instrument_id="parsivel")
-file_paths = client.download(raw_metadata, "data_raw/")
+instruments = client.instruments()
+instrument = client.instrument("d6bf209b-c48b-48a4-bbfb-fed713b27832")
+
+file = client.file("405cc410-1f24-4ea9-bae8-da7f22be26cb")
+
+files = client.files(site_id="hyytiala", date="2021-01-01", product=["mwr", "radar"])
+file_paths = client.download(files, "data/")
+
+raw_files = client.raw_files(site_id="granada", date="2024-01", instrument_id="parsivel")
+file_paths = client.download(raw_files, "data_raw/")
 ```
 
 When downloading files inside Jupyter notebook (or similar environment), you have to use the asynchronous version:

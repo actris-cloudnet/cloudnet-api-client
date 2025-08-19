@@ -3,13 +3,14 @@ import calendar
 import datetime
 import os
 import re
-from dataclasses import fields, is_dataclass
+from dataclasses import asdict, fields, is_dataclass
 from os import PathLike
 from pathlib import Path
 from typing import TypeVar, cast
 from urllib.parse import urljoin
 from uuid import UUID
 
+import numpy as np
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -18,6 +19,9 @@ from cloudnet_api_client.containers import (
     PRODUCT_TYPE,
     SITE_TYPE,
     STATUS,
+    ExtendedInstrument,
+    ExtendedProduct,
+    ExtendedSite,
     Instrument,
     Model,
     Product,
@@ -50,48 +54,73 @@ class APIClient:
 
     def sites(
         self,
-        site_id: str | None = None,
         type: SITE_TYPE | list[SITE_TYPE] | None = None,
     ) -> list[Site]:
-        if site_id:
-            res = self._get_response(f"sites/{site_id}")
-        else:
-            res = self._get_response("sites", {"type": type})
+        res = self._get_response("sites", {"type": type})
         return _build_objects(res, Site)
+
+    def site(self, site_id: str) -> Site:
+        res = self._get_response(f"sites/{site_id}")[0]
+        return _build_object(res, Site)
 
     def products(
         self, type: PRODUCT_TYPE | list[PRODUCT_TYPE] | None = None
     ) -> list[Product]:
-        res = self._get_response("products")
-        data = _build_objects(res, Product)
+        data = self._get_response("products")
         if isinstance(type, str):
-            data = [obj for obj in data if type in obj.type]
+            data = [obj for obj in data if type in obj["type"]]
         elif isinstance(type, list):
-            data = [obj for obj in data if any(t in obj.type for t in type)]
-        return data
+            data = [obj for obj in data if any(t in obj["type"] for t in type)]
+        return _build_objects(data, Product)
+
+    def product(self, product_id: str) -> ExtendedProduct:
+        res = self._get_response(f"products/{product_id}")[0]
+        obj = _build_object(res, Product)
+        return ExtendedProduct(
+            **asdict(obj),
+            derived_product_ids=_set_of_ids(res, "derivedProducts"),
+            source_instrument_ids=_set_of_ids(res, "sourceInstruments"),
+            source_product_ids=_set_of_ids(res, "sourceProducts"),
+        )
 
     def instruments(self) -> list[Instrument]:
         res = self._get_response("instrument-pids")
-        return [
-            Instrument(
-                instrument_id=obj["instrument"]["id"],
-                model=obj["model"],
-                type=obj["type"],
-                uuid=UUID(obj["uuid"]),
-                pid=obj["pid"],
-                owners=obj["owners"],
-                serial_number=obj["serialNumber"],
-                name=obj["name"],
-            )
-            for obj in res
-        ]
+        return [_create_instrument_object(obj) for obj in res]
+
+    def instrument(self, uuid: str | UUID) -> ExtendedInstrument:
+        res = self._get_response(f"instrument-pids/{str(uuid)}")[0]
+        obj = _create_instrument_object(res)
+        return ExtendedInstrument(
+            **asdict(obj),
+            derived_product_ids=self.get_derived_products(obj.instrument_id),
+        )
+
+    def get_derived_products(self, product_id: str | None) -> frozenset[str]:
+        res = self._get_response(f"instruments/{product_id}")[0]
+        return _set_of_ids(res, "derivedProducts")
+
+    def models(self) -> list[Model]:
+        res = self._get_response("models")
+        return [_create_model_object(obj) for obj in res]
+
+    def model(self, model_id: str) -> Model:
+        res = self._get_response("models")
+        model = [r for r in res if r["id"] == model_id]
+        if not model:
+            raise ValueError(f"Model with id {model_id} not found")
+        return _create_model_object(model[0])
 
     def file(
         self,
         uuid: str | UUID,
     ) -> ProductMetadata:
-        res = self._get_response(f"files/{uuid}")
-        return _build_meta_objects(res)[0]
+        file_res = self._get_response(f"files/{uuid}")
+        if file_res[0]["instrument"] is not None:
+            instrument_uuid = file_res[0]["instrument"]["uuid"]
+            instrument_res = self._get_response(f"instrument-pids/{instrument_uuid}")[0]
+        else:
+            instrument_res = None
+        return _build_meta_objects(file_res, instrument_res)[0]
 
     def versions(self, uuid: str | UUID) -> list[VersionMetadata]:
         res = self._get_response(
@@ -111,7 +140,7 @@ class APIClient:
             for obj in res
         ]
 
-    def metadata(
+    def files(
         self,
         site_id: QueryParam = None,
         date: DateParam = None,
@@ -164,7 +193,7 @@ class APIClient:
 
         return _build_meta_objects(files_res)
 
-    def raw_metadata(
+    def raw_files(
         self,
         site_id: QueryParam = None,
         date: DateParam = None,
@@ -193,7 +222,7 @@ class APIClient:
         res = self._get_response("raw-files", params)
         return _build_raw_meta_objects(res)
 
-    def raw_model_metadata(
+    def raw_model_files(
         self,
         site_id: QueryParam = None,
         model_id: QueryParam = None,
@@ -223,6 +252,62 @@ class APIClient:
 
         res = self._get_response("raw-model-files", params)
         return _build_raw_model_meta_objects(res)
+
+    def mobile_site(self, site_id: str, date: datetime.date | str) -> ExtendedSite:
+        # TODO: Not sure what is required with this
+        dd = datetime.date.fromisoformat(date) if isinstance(date, str) else date
+        site = self._get_response(f"sites/{site_id}")[0]
+        if site["latitude"] is None and site["longitude"] is None:
+            location = self._get_response(
+                f"sites/{site_id}/locations", {"date": dd.isoformat()}
+            )[0]
+            site["latitude"] = location["latitude"]
+            site["longitude"] = location["longitude"]
+
+            prev_date = dd - datetime.timedelta(days=1)
+            next_date = dd + datetime.timedelta(days=1)
+            raw_locations = np.array(
+                self._fetch_raw_locations(site_id, prev_date, -1)
+                + self._fetch_raw_locations(site_id, dd)
+                + self._fetch_raw_locations(site_id, next_date, 0),
+            )
+            site["raw_time"] = raw_locations[:, 0]
+            site["raw_latitude"] = raw_locations[:, 1].astype(np.float32)
+            site["raw_longitude"] = raw_locations[:, 2].astype(np.float32)
+
+            field_names = {f.name for f in fields(ExtendedSite)}
+            return ExtendedSite(
+                **{
+                    _to_snake(k): v
+                    for k, v in site.items()
+                    if _to_snake(k) in field_names
+                },
+            )
+        raise ValueError("Site not found")
+
+    def _fetch_raw_locations(
+        self, site_id: str, date: datetime.date, index: int | None = None
+    ) -> list[tuple[datetime.datetime, float, float]]:
+        locations = self._get_response(
+            f"sites/{site_id}/locations",
+            {"date": date.isoformat(), "raw": "1"},
+        )
+        if index is not None:
+            if index < 0:
+                index += len(locations)
+            locations = locations[index : index + 1]
+        output = []
+        for location in locations:
+            output.append(
+                (
+                    datetime.datetime.fromisoformat(
+                        location["date"].replace("Z", "+00:00")
+                    ),
+                    location["latitude"],
+                    location["longitude"],
+                )
+            )
+        return output
 
     def download(
         self,
@@ -411,22 +496,12 @@ def _parse_datetime_param(
     raise ValueError(msg)
 
 
-def _build_objects(res: list[dict], object_type: type[T]) -> list[T]:
-    assert is_dataclass(object_type)
-    field_names = {f.name for f in fields(object_type)}
-    objects = [
-        object_type(
-            **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names}
-        )
-        for obj in res
-    ]
-    return cast(list[T], objects)
-
-
 CONVERTED = {"measurement_date", "created_at", "updated_at", "size", "uuid"}
 
 
-def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
+def _build_meta_objects(
+    res: list[dict], instrument_meta: dict | None = None
+) -> list[ProductMetadata]:
     field_names = (
         {f.name for f in fields(ProductMetadata)}
         - CONVERTED
@@ -441,8 +516,8 @@ def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
                 type=obj["product"]["type"],
                 experimental=obj["product"]["experimental"],
             ),
-            instrument=_create_instrument_object(obj["instrument"])
-            if "instrument" in obj and obj["instrument"] is not None
+            instrument=_create_instrument_object(instrument_meta or obj["instrument"])
+            if instrument_meta or "instrument" in obj and obj["instrument"] is not None
             else None,
             model=_create_model_object(obj["model"])
             if "model" in obj and obj["model"] is not None
@@ -452,7 +527,7 @@ def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
             updated_at=_parse_datetime(obj["updatedAt"]),
             size=int(obj["size"]),
             uuid=UUID(obj["uuid"]),
-            site=_create_site_object(obj["site"]),
+            site=_build_object(obj["site"], Site),
         )
         for obj in res
     ]
@@ -460,7 +535,9 @@ def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
 
 def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
     field_names = (
-        {f.name for f in fields(RawMetadata)} - CONVERTED - {"instrument", "site"}
+        {f.name for f in fields(RawMetadata)}
+        - CONVERTED
+        - {"instrument", "site", "tags"}
     )
     return [
         RawMetadata(
@@ -471,7 +548,8 @@ def _build_raw_meta_objects(res: list[dict]) -> list[RawMetadata]:
             updated_at=_parse_datetime(obj["updatedAt"]),
             size=int(obj["size"]),
             uuid=UUID(obj["uuid"]),
-            site=_create_site_object(obj["site"]),
+            site=_build_object(obj["site"], Site),
+            tags=frozenset(obj["tags"]),
         )
         for obj in res
     ]
@@ -490,60 +568,65 @@ def _build_raw_model_meta_objects(res: list[dict]) -> list[RawModelMetadata]:
             updated_at=_parse_datetime(obj["updatedAt"]),
             size=int(obj["size"]),
             uuid=UUID(obj["uuid"]),
-            site=_create_site_object(obj["site"]),
+            site=_build_object(obj["site"], Site),
         )
         for obj in res
     ]
 
 
-def _create_model_object(metadata: dict) -> Model:
+def _create_model_object(meta: dict) -> Model:
     return Model(
-        model_id=metadata["id"],
-        name=metadata["humanReadableName"],
-        optimum_order=int(metadata["optimumOrder"]),
-        source_model_id=metadata["sourceModelId"],
-        forecast_start=int(metadata["forecastStart"])
-        if metadata["forecastStart"] is not None
+        id=meta["id"],
+        name=meta["humanReadableName"],
+        optimum_order=int(meta["optimumOrder"]),
+        source_model_id=meta["sourceModelId"],
+        forecast_start=int(meta["forecastStart"])
+        if meta["forecastStart"] is not None
         else None,
-        forecast_end=int(metadata["forecastEnd"])
-        if metadata["forecastEnd"] is not None
+        forecast_end=int(meta["forecastEnd"])
+        if meta["forecastEnd"] is not None
         else None,
     )
 
 
-def _create_site_object(metadata: dict) -> Site:
-    return Site(
-        id=metadata["id"],
-        human_readable_name=metadata["humanReadableName"],
-        station_name=metadata["stationName"],
-        latitude=metadata["latitude"],
-        longitude=metadata["longitude"],
-        altitude=metadata["altitude"],
-        dvas_id=metadata["dvasId"],
-        actris_id=metadata["actrisId"],
-        country=metadata["country"],
-        country_code=metadata["countryCode"],
-        country_subdivision_code=metadata["countrySubdivisionCode"],
-        type=metadata["type"],
-        gaw=metadata["gaw"],
-    )
-
-
-def _create_instrument_object(metadata: dict) -> Instrument:
+def _create_instrument_object(meta: dict) -> Instrument:
     return Instrument(
-        instrument_id=metadata.get("instrumentId"),  # not in api/files/:uuid
-        model=metadata["model"],
-        type=metadata["type"],
-        uuid=UUID(metadata["uuid"]),
-        pid=metadata["pid"],
-        owners=metadata["owners"],
-        serial_number=metadata["serialNumber"],
-        name=metadata["name"],
+        instrument_id=meta.get("instrument", {}).get("id") or meta["instrumentId"],
+        model=meta["model"],
+        type=meta["type"],
+        uuid=UUID(meta["uuid"]),
+        pid=meta["pid"],
+        owners=tuple(meta["owners"]),
+        serial_number=meta["serialNumber"],
+        name=meta["name"],
     )
+
+
+def _build_objects(data_list: list[dict], cls: type[T]) -> list[T]:
+    return [_build_object(d, cls) for d in data_list]
+
+
+def _build_object(data: dict, cls: type[T]) -> T:
+    assert is_dataclass(cls)
+    field_names = {f.name for f in fields(cls)}
+    kwargs = {}
+    for k, v in data.items():
+        snake_key = _to_snake(k)
+        if snake_key in field_names:
+            if isinstance(v, list):
+                kwargs[snake_key] = frozenset(v)
+            else:
+                kwargs[snake_key] = v
+    object = cls(**kwargs)
+    return cast(T, object)
 
 
 def _to_snake(name: str) -> str:
     return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
+
+
+def _set_of_ids(res: dict, name: str) -> frozenset[str]:
+    return frozenset(obj["id"] for obj in res.get(name, []))
 
 
 def _make_session() -> requests.Session:

@@ -3,6 +3,8 @@ import uuid
 from dataclasses import dataclass
 from typing import Literal
 
+import numpy as np
+
 SITE_TYPE = Literal["cloudnet", "model", "hidden", "campaign"]
 PRODUCT_TYPE = Literal["instrument", "geophysical", "evaluation", "model"]
 STATUS = Literal["created", "uploaded", "processed", "invalid"]
@@ -21,33 +23,52 @@ class Site:
     country: str
     country_code: str
     country_subdivision_code: str | None
-    type: list[SITE_TYPE]
+    type: frozenset[SITE_TYPE]
     gaw: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ExtendedSite(Site):
+    raw_time: np.ndarray
+    raw_latitude: np.ndarray
+    raw_longitude: np.ndarray
 
 
 @dataclass(frozen=True, slots=True)
 class Product:
     id: str
     human_readable_name: str
-    type: list[PRODUCT_TYPE]
+    type: frozenset[PRODUCT_TYPE]
     experimental: bool
 
 
 @dataclass(frozen=True, slots=True)
+class ExtendedProduct(Product):
+    source_instrument_ids: frozenset[str]
+    source_product_ids: frozenset[str]
+    derived_product_ids: frozenset[str]
+
+
+@dataclass(frozen=True, slots=True)
 class Instrument:
-    instrument_id: str | None  # CLU internal identifier, e.g. "rpg-fmcw-94"
+    instrument_id: str
     model: str  # From ACTRIS Vocabulary, e.g. "RPG-FMCW-94 DP"
     type: str  # From ACTRIS Vocabulary, e.g. "Doppler non-scanning cloud radar"
     name: str  # e.g. "FMI RPG-FMCW-94 (Pallas)"
     uuid: uuid.UUID
     pid: str
-    owners: list[str]
+    owners: tuple[str]  # could be ordered
     serial_number: str | None
 
 
 @dataclass(frozen=True, slots=True)
+class ExtendedInstrument(Instrument):
+    derived_product_ids: frozenset[str]
+
+
+@dataclass(frozen=True, slots=True)
 class Model:
-    model_id: str
+    id: str
     name: str
     optimum_order: int
     source_model_id: str
@@ -72,7 +93,7 @@ class Metadata:
 class RawMetadata(Metadata):
     status: STATUS
     instrument: Instrument
-    tags: list[str] | None
+    tags: frozenset[str] | None
 
 
 @dataclass(frozen=True, slots=True)
