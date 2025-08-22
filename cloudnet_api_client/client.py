@@ -92,11 +92,11 @@ class APIClient:
         obj = _create_instrument_object(res)
         return ExtendedInstrument(
             **asdict(obj),
-            derived_product_ids=self.get_derived_products(obj.instrument_id),
+            derived_product_ids=self.get_instrument_derived_products(obj.instrument_id),
         )
 
-    def get_derived_products(self, product_id: str | None) -> frozenset[str]:
-        res = self._get_response(f"instruments/{product_id}")[0]
+    def get_instrument_derived_products(self, instrument_id: str) -> frozenset[str]:
+        res = self._get_response(f"instruments/{instrument_id}")[0]
         return _set_of_ids(res, "derivedProducts")
 
     def models(self) -> list[Model]:

@@ -381,6 +381,12 @@ class TestFilterCombinations:
         assert len(meta) == 2
 
 
+def test_get_instrument_derived_products(client: APIClient):
+    assert client.get_instrument_derived_products("hatpro") == {"mwr", "mwr-l1c"}
+    assert client.get_instrument_derived_products("pluvio") == {"rain-gauge"}
+    assert client.get_instrument_derived_products("parsivel") == {"disdrometer"}
+
+
 def _submit_product_file(backend_url: str, data_path: Path, meta: File):
     _date, site_id, product, *_rest = meta.filename.removesuffix(".nc").split("_")
     full_path = data_path / meta.filename
