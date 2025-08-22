@@ -3,11 +3,16 @@ import uuid
 from dataclasses import dataclass
 from typing import Literal
 
-import numpy as np
-
 SITE_TYPE = Literal["cloudnet", "model", "hidden", "campaign"]
 PRODUCT_TYPE = Literal["instrument", "geophysical", "evaluation", "model"]
 STATUS = Literal["created", "uploaded", "processed", "invalid"]
+
+
+@dataclass(frozen=True, slots=True)
+class Location:
+    time: datetime.datetime | datetime.date
+    latitude: float
+    longitude: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,13 +30,6 @@ class Site:
     country_subdivision_code: str | None
     type: frozenset[SITE_TYPE]
     gaw: str | None
-
-
-@dataclass(frozen=True, slots=True)
-class ExtendedSite(Site):
-    raw_time: np.ndarray
-    raw_latitude: np.ndarray
-    raw_longitude: np.ndarray
 
 
 @dataclass(frozen=True, slots=True)

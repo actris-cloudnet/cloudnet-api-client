@@ -10,7 +10,6 @@ from typing import TypeVar, cast
 from urllib.parse import urljoin
 from uuid import UUID
 
-import numpy as np
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -21,8 +20,8 @@ from cloudnet_api_client.containers import (
     STATUS,
     ExtendedInstrument,
     ExtendedProduct,
-    ExtendedSite,
     Instrument,
+    Location,
     Model,
     Product,
     ProductMetadata,
@@ -253,61 +252,42 @@ class APIClient:
         res = self._get_response("raw-model-files", params)
         return _build_raw_model_meta_objects(res)
 
-    def mobile_site(self, site_id: str, date: datetime.date | str) -> ExtendedSite:
-        # TODO: Not sure what is required with this
-        dd = datetime.date.fromisoformat(date) if isinstance(date, str) else date
-        site = self._get_response(f"sites/{site_id}")[0]
-        if site["latitude"] is None and site["longitude"] is None:
-            location = self._get_response(
-                f"sites/{site_id}/locations", {"date": dd.isoformat()}
-            )[0]
-            site["latitude"] = location["latitude"]
-            site["longitude"] = location["longitude"]
+    def moving_site_mean_location(
+        self, site_id: str, date: datetime.date | str
+    ) -> Location:
+        dd = _parse_date_param(date)[0]
+        res = self._get_response(
+            f"sites/{site_id}/locations",
+            {"date": dd},
+        )[0]
+        return Location(
+            time=dd,
+            latitude=res["latitude"],
+            longitude=res["longitude"],
+        )
 
-            prev_date = dd - datetime.timedelta(days=1)
-            next_date = dd + datetime.timedelta(days=1)
-            raw_locations = np.array(
-                self._fetch_raw_locations(site_id, prev_date, -1)
-                + self._fetch_raw_locations(site_id, dd)
-                + self._fetch_raw_locations(site_id, next_date, 0),
-            )
-            site["raw_time"] = raw_locations[:, 0]
-            site["raw_latitude"] = raw_locations[:, 1].astype(np.float32)
-            site["raw_longitude"] = raw_locations[:, 2].astype(np.float32)
-
-            field_names = {f.name for f in fields(ExtendedSite)}
-            return ExtendedSite(
-                **{
-                    _to_snake(k): v
-                    for k, v in site.items()
-                    if _to_snake(k) in field_names
-                },
-            )
-        raise ValueError("Site not found")
-
-    def _fetch_raw_locations(
-        self, site_id: str, date: datetime.date, index: int | None = None
-    ) -> list[tuple[datetime.datetime, float, float]]:
+    def moving_site_locations(
+        self, site_id: str, date: datetime.date | str, index: int | None = None
+    ) -> list[Location]:
+        dd = _parse_date_param(date)[0]
         locations = self._get_response(
             f"sites/{site_id}/locations",
-            {"date": date.isoformat(), "raw": "1"},
+            {"date": dd, "raw": "1"},
         )
         if index is not None:
             if index < 0:
                 index += len(locations)
             locations = locations[index : index + 1]
-        output = []
-        for location in locations:
-            output.append(
-                (
-                    datetime.datetime.fromisoformat(
-                        location["date"].replace("Z", "+00:00")
-                    ),
-                    location["latitude"],
-                    location["longitude"],
-                )
+        return [
+            Location(
+                time=datetime.datetime.fromisoformat(
+                    location["date"].replace("Z", "+00:00")
+                ),
+                latitude=location["latitude"],
+                longitude=location["longitude"],
             )
-        return output
+            for location in locations
+        ]
 
     def download(
         self,

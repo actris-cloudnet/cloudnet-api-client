@@ -12,8 +12,8 @@ from cloudnet_api_client import APIClient
 from cloudnet_api_client.containers import (
     ExtendedInstrument,
     ExtendedProduct,
-    ExtendedSite,
     Instrument,
+    Location,
     Model,
     Product,
     ProductMetadata,
@@ -122,16 +122,17 @@ class TestSites:
         site = client.site("bucharest")
         assert isinstance(site, Site)
 
-    def test_mobile_site_route(self, client: APIClient):
-        site = client.mobile_site("boaty", "2022-01-01")
-        assert isinstance(site, ExtendedSite)
-        assert site.latitude is not None
-        assert site.longitude is not None
-        assert site.raw_time is not None
+    def test_moving_site_mean_location(self, client: APIClient):
+        location = client.moving_site_mean_location("boaty", "2022-01-01")
+        assert isinstance(location, Location)
+        assert location.time == datetime.date(2022, 1, 1)
+        assert round(location.latitude) == 60
+        assert round(location.longitude) == 25
 
-    def test_mobile_site_route_error(self, client: APIClient):
-        with pytest.raises(requests.exceptions.HTTPError):
-            client.mobile_site("rv-meteor", "2024-09-03")
+    def test_moving_site_locations(self, client: APIClient):
+        locations = client.moving_site_locations("boaty", "2022-01-01")
+        assert isinstance(locations, list)
+        assert all(isinstance(loc, Location) for loc in locations)
 
 
 class TestProducts:
