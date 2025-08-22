@@ -268,7 +268,7 @@ class APIClient:
         )
 
     def moving_site_locations(
-        self, site_id: str, date: datetime.date | str, index: int | None = None
+        self, site_id: str, date: datetime.date | str
     ) -> list[Location]:
         if not isinstance(date, datetime.date):
             date = datetime.date.fromisoformat(date)
@@ -276,10 +276,6 @@ class APIClient:
             f"sites/{site_id}/locations",
             {"date": date, "raw": "1"},
         )
-        if index is not None:
-            if index < 0:
-                index += len(locations)
-            locations = locations[index : index + 1]
         return [
             Location(
                 time=datetime.datetime.fromisoformat(
