@@ -255,13 +255,14 @@ class APIClient:
     def moving_site_mean_location(
         self, site_id: str, date: datetime.date | str
     ) -> Location:
-        dd = _parse_date_param(date)[0]
+        if not isinstance(date, datetime.date):
+            date = datetime.date.fromisoformat(date)
         res = self._get_response(
             f"sites/{site_id}/locations",
-            {"date": dd},
+            {"date": date},
         )[0]
         return Location(
-            time=dd,
+            time=date,
             latitude=res["latitude"],
             longitude=res["longitude"],
         )
@@ -269,10 +270,11 @@ class APIClient:
     def moving_site_locations(
         self, site_id: str, date: datetime.date | str, index: int | None = None
     ) -> list[Location]:
-        dd = _parse_date_param(date)[0]
+        if not isinstance(date, datetime.date):
+            date = datetime.date.fromisoformat(date)
         locations = self._get_response(
             f"sites/{site_id}/locations",
-            {"date": dd, "raw": "1"},
+            {"date": date, "raw": "1"},
         )
         if index is not None:
             if index < 0:
