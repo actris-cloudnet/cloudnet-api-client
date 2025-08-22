@@ -498,7 +498,7 @@ def _build_meta_objects(
     field_names = (
         {f.name for f in fields(ProductMetadata)}
         - CONVERTED
-        - {"product", "instrument", "model", "site"}
+        - {"product", "instrument", "model", "site", "source_file_ids"}
     )
     return [
         ProductMetadata(
@@ -521,6 +521,7 @@ def _build_meta_objects(
             size=int(obj["size"]),
             uuid=UUID(obj["uuid"]),
             site=_build_object(obj["site"], Site),
+            source_file_ids=frozenset(UUID(id) for id in obj.get("sourceFileIds", [])),
         )
         for obj in res
     ]

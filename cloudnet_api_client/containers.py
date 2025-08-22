@@ -115,6 +115,7 @@ class ProductMetadata(Metadata):
     format: str
     start_time: datetime.datetime | None
     stop_time: datetime.datetime | None
+    source_file_ids: frozenset[uuid.UUID] | None
 
 
 @dataclass(frozen=True, slots=True)
