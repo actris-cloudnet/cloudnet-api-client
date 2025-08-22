@@ -99,6 +99,10 @@ class APIClient:
         res = self._get_response(f"instruments/{instrument_id}")[0]
         return _set_of_ids(res, "derivedProducts")
 
+    def instrument_ids(self) -> frozenset[str]:
+        res = self._get_response("instruments")
+        return frozenset(obj["id"] for obj in res)
+
     def models(self) -> list[Model]:
         res = self._get_response("models")
         return [_create_model_object(obj) for obj in res]
