@@ -88,7 +88,7 @@ class APIClient:
         return [_create_instrument_object(obj) for obj in res]
 
     def instrument(self, uuid: str | UUID) -> ExtendedInstrument:
-        res = self._get_response(f"instrument-pids/{str(uuid)}")[0]
+        res = self._get_response(f"instrument-pids/{uuid}")[0]
         obj = _create_instrument_object(res)
         return ExtendedInstrument(
             **asdict(obj),
