@@ -3,6 +3,7 @@ import calendar
 import datetime
 import os
 import re
+import warnings
 from dataclasses import asdict, fields, is_dataclass
 from os import PathLike
 from pathlib import Path
@@ -192,6 +193,10 @@ class APIClient:
 
         return _build_meta_objects(files_res)
 
+    def metadata(self, *args, **kwargs):
+        warnings.warn("use files instead of metadata", DeprecationWarning, stacklevel=2)
+        return self.files(*args, **kwargs)
+
     def raw_files(
         self,
         site_id: QueryParam = None,
@@ -220,6 +225,12 @@ class APIClient:
         )
         res = self._get_response("raw-files", params)
         return _build_raw_meta_objects(res)
+
+    def raw_metadata(self, *args, **kwargs):
+        warnings.warn(
+            "use raw_files instead of raw_metadata", DeprecationWarning, stacklevel=2
+        )
+        return self.raw_files(*args, **kwargs)
 
     def raw_model_files(
         self,
