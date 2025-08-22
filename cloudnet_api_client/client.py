@@ -170,7 +170,7 @@ class APIClient:
             params, date, date_from, date_to, updated_at, updated_at_from, updated_at_to
         )
 
-        _check_params(params, ("showLegacy",))
+        _check_params({**params, "model": model_id}, ("showLegacy",))
 
         no_instrument = instrument_id is None and instrument_pid is None
 
@@ -517,10 +517,10 @@ def _build_meta_objects(
                 experimental=obj["product"]["experimental"],
             ),
             instrument=_create_instrument_object(instrument_meta or obj["instrument"])
-            if instrument_meta or "instrument" in obj and obj["instrument"] is not None
+            if instrument_meta or "instrument" in obj and obj["instrument"]
             else None,
             model=_create_model_object(obj["model"])
-            if "model" in obj and obj["model"] is not None
+            if "model" in obj and obj["model"]
             else None,
             measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
             created_at=_parse_datetime(obj["createdAt"]),

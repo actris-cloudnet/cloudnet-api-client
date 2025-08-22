@@ -87,6 +87,7 @@ def files_product() -> list[File]:
         File("20250808_hyytiala_iwc-Z-T-method.nc", legacy=False, volatile=False),
         File("20140205_hyytiala_classification.nc", legacy=True, volatile=False),
         File("20250821_limassol_parsivel_41582c49.nc", legacy=False, volatile=False),
+        File("20250822_leipzig-lim_ecmwf-open.nc", legacy=False, volatile=True),
     ]
 
 
@@ -239,6 +240,14 @@ class TestProductFiles:
         meta = client.files(site_id="hyytiala", date="2014-02-05")
         assert len(meta) == 0
         meta = client.files(site_id="hyytiala", date="2014-02-05", show_legacy=True)
+        assert len(meta) == 1
+
+    def test_model_search(self, client: APIClient):
+        meta = client.files(model_id="ecmwf-open")
+        assert len(meta) == 1
+
+    def test_instrument_search(self, client: APIClient):
+        meta = client.files(instrument_id="parsivel")
         assert len(meta) == 1
 
 
@@ -415,6 +424,7 @@ def _submit_product_file(backend_url: str, data_path: Path, meta: File):
             "instrumentPid": getattr(nc, "instrument_pid", None),
             **file_info,
         }
+        payload["model"] = product if payload["product"] == "model" else None
     url = f"{backend_url}/files/{meta.filename}"
     res = requests.put(url, json=payload)
     if res.status_code == 403:
