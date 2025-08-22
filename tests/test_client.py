@@ -218,12 +218,22 @@ class TestProductFiles:
         assert isinstance(meta, ProductMetadata)
         assert str(meta.uuid) == uuid
         assert meta.instrument is None
+        assert meta.model is None
+        assert meta.product.id == "classification"
 
-    def test_files_route_with_instrument_product(self, client: APIClient):
+    def test_file_route_with_instrument_product(self, client: APIClient):
         uuid = "ab872770-9136-4e61-8958-31e62abdfb1b"
         meta = client.file(uuid)
-        assert meta.instrument is not None
+        assert meta.model is None
         assert isinstance(meta.instrument, Instrument)
+        assert meta.instrument.instrument_id == "parsivel"
+
+    def test_file_route_with_model_product(self, client: APIClient):
+        uuid = "277d54f0-d376-4448-a784-f1c8b819b46a"
+        meta = client.file(uuid)
+        assert meta.instrument is None
+        assert isinstance(meta.model, Model)
+        assert meta.model.id == "ecmwf-open"
 
     def test_versions_route(self, client: APIClient):
         uuid = "8dcc865c-6920-49ce-a627-de045ec896e8"

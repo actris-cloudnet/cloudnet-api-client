@@ -115,7 +115,7 @@ class APIClient:
         uuid: str | UUID,
     ) -> ProductMetadata:
         file_res = self._get_response(f"files/{uuid}")
-        if file_res[0]["instrument"] is not None:
+        if file_res[0].get("instrument") is not None:
             instrument_uuid = file_res[0]["instrument"]["uuid"]
             instrument_res = self._get_response(f"instrument-pids/{instrument_uuid}")[0]
         else:
