@@ -402,9 +402,9 @@ class TestFilterCombinations:
 
 
 def test_get_instrument_derived_products(client: APIClient):
-    assert client.get_instrument_derived_products("hatpro") == {"mwr", "mwr-l1c"}
-    assert client.get_instrument_derived_products("pluvio") == {"rain-gauge"}
-    assert client.get_instrument_derived_products("parsivel") == {"disdrometer"}
+    assert client.instrument_derived_products("hatpro") == {"mwr", "mwr-l1c"}
+    assert client.instrument_derived_products("pluvio") == {"rain-gauge"}
+    assert client.instrument_derived_products("parsivel") == {"disdrometer"}
 
 
 def _submit_product_file(backend_url: str, data_path: Path, meta: File):
