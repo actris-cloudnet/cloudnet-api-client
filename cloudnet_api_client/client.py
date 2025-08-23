@@ -302,6 +302,17 @@ class APIClient:
             for location in locations
         ]
 
+    def source_instruments(self, uuid: UUID | str) -> set[ExtendedInstrument]:
+        """Recursively finds source instruments of a product file."""
+        instruments = set()
+        res = self._get_response(f"files/{uuid}")[0]
+        if res.get("instrument"):
+            instrument = self.instrument(res["instrument"]["uuid"])
+            instruments.add(instrument)
+        for source_id in res.get("sourceFileIds", []):
+            instruments |= self.source_instruments(source_id)
+        return instruments
+
     def download(
         self,
         metadata: MetadataList,
