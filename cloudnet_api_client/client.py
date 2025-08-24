@@ -313,6 +313,20 @@ class APIClient:
             instruments |= self.source_instruments(source_id)
         return instruments
 
+    def calibration(
+        self, instrument_pid: str, date: datetime.date | str
+    ) -> dict | None:
+        if not isinstance(date, datetime.date):
+            date = datetime.date.fromisoformat(date)
+        payload = {"instrumentPid": instrument_pid, "date": date.isoformat()}
+        try:
+            res = self._get_response("calibration", params=payload)
+            return res[0] if res else None
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                return None
+            raise
+
     def download(
         self,
         metadata: MetadataList,
