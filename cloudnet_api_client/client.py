@@ -7,7 +7,7 @@ import warnings
 from dataclasses import asdict, fields, is_dataclass
 from os import PathLike
 from pathlib import Path
-from typing import TypeVar, cast
+from typing import TypeVar, cast, get_args
 from urllib.parse import urljoin
 from uuid import UUID
 
@@ -33,6 +33,8 @@ from cloudnet_api_client.containers import (
 )
 from cloudnet_api_client.dl import download_files
 
+from .utils import CloudnetAPIError
+
 T = TypeVar("T")
 MetadataList = list[ProductMetadata] | list[RawMetadata] | list[RawModelMetadata]
 TMetadata = TypeVar("TMetadata", ProductMetadata, RawMetadata, RawModelMetadata)
@@ -56,25 +58,25 @@ class APIClient:
         self,
         type: SITE_TYPE | list[SITE_TYPE] | None = None,
     ) -> list[Site]:
-        res = self._get_response("sites", {"type": type})
+        validate_type(type, SITE_TYPE)
+        res = self._get("sites", {"type": type})
         return _build_objects(res, Site)
 
     def site(self, site_id: str) -> Site:
-        res = self._get_response(f"sites/{site_id}")[0]
+        res = self._get(f"sites/{site_id}")[0]
         return _build_object(res, Site)
 
     def products(
         self, type: PRODUCT_TYPE | list[PRODUCT_TYPE] | None = None
     ) -> list[Product]:
-        data = self._get_response("products")
-        if isinstance(type, str):
-            data = [obj for obj in data if type in obj["type"]]
-        elif isinstance(type, list):
+        validate_type(type, PRODUCT_TYPE)
+        data = self._get("products")
+        if type is not None:
             data = [obj for obj in data if any(t in obj["type"] for t in type)]
         return _build_objects(data, Product)
 
     def product(self, product_id: str) -> ExtendedProduct:
-        res = self._get_response(f"products/{product_id}")[0]
+        res = self._get(f"products/{product_id}")[0]
         obj = _build_object(res, Product)
         return ExtendedProduct(
             **asdict(obj),
@@ -84,11 +86,11 @@ class APIClient:
         )
 
     def instruments(self) -> list[Instrument]:
-        res = self._get_response("instrument-pids")
+        res = self._get("instrument-pids")
         return [_create_instrument_object(obj) for obj in res]
 
     def instrument(self, uuid: str | UUID) -> ExtendedInstrument:
-        res = self._get_response(f"instrument-pids/{uuid}")[0]
+        res = self._get(f"instrument-pids/{uuid}")[0]
         obj = _create_instrument_object(res)
         return ExtendedInstrument(
             **asdict(obj),
@@ -96,41 +98,39 @@ class APIClient:
         )
 
     def instrument_derived_products(self, instrument_id: str) -> frozenset[str]:
-        res = self._get_response(f"instruments/{instrument_id}")[0]
+        res = self._get(f"instruments/{instrument_id}")[0]
         return _set_of_ids(res, "derivedProducts")
 
     def instrument_ids(self) -> frozenset[str]:
-        res = self._get_response("instruments")
+        res = self._get("instruments")
         return frozenset(obj["id"] for obj in res)
 
     def models(self) -> list[Model]:
-        res = self._get_response("models")
+        res = self._get("models")
         return [_create_model_object(obj) for obj in res]
 
     def model(self, model_id: str) -> Model:
-        res = self._get_response("models")
+        res = self._get("models")
         model = [r for r in res if r["id"] == model_id]
         if not model:
-            raise ValueError(f"Model with id {model_id} not found")
+            raise CloudnetAPIError(f"Model with id {model_id} not found")
         return _create_model_object(model[0])
 
     def file(
         self,
         uuid: str | UUID,
     ) -> ProductMetadata:
-        file_res = self._get_response(f"files/{uuid}")
-        if file_res[0].get("instrument") is not None:
-            instrument_uuid = file_res[0]["instrument"]["uuid"]
-            instrument_res = self._get_response(f"instrument-pids/{instrument_uuid}")[0]
+        file_res = self._get(f"files/{uuid}")[0]
+        if file_res.get("instrument") is not None:
+            instrument_uuid = file_res["instrument"]["uuid"]
+            instrument_res = self._get(f"instrument-pids/{instrument_uuid}")[0]
         else:
             instrument_res = None
-        return _build_meta_objects(file_res, instrument_res)[0]
+        return _build_meta_objects([file_res], instrument_res)[0]
 
     def versions(self, uuid: str | UUID) -> list[VersionMetadata]:
-        res = self._get_response(
-            f"files/{uuid}/versions",
-            {"properties": ["pid", "dvasId", "legacy", "size", "checksum"]},
-        )
+        payload = {"properties": ["pid", "dvasId", "legacy", "size", "checksum"]}
+        res = self._get(f"files/{uuid}/versions", params=payload)
         return [
             VersionMetadata(
                 uuid=UUID(obj["uuid"]),
@@ -181,7 +181,7 @@ class APIClient:
         if no_instrument and (product is None and model_id is not None):
             files_res = []
         else:
-            files_res = self._get_response("files", params)
+            files_res = self._get("files", params, expected_code=400)
 
         # Add model files if requested
         if (
@@ -193,7 +193,7 @@ class APIClient:
                 if key in params:
                     del params[key]
             params["model"] = model_id
-            files_res += self._get_response("model-files", params)
+            files_res += self._get("model-files", params, expected_code=400)
 
         return _build_meta_objects(files_res)
 
@@ -227,7 +227,7 @@ class APIClient:
         _add_date_params(
             params, date, date_from, date_to, updated_at, updated_at_from, updated_at_to
         )
-        res = self._get_response("raw-files", params)
+        res = self._get("raw-files", params, expected_code=400)
         return _build_raw_meta_objects(res)
 
     def raw_metadata(self, *args, **kwargs):
@@ -264,7 +264,7 @@ class APIClient:
 
         _check_params(params)
 
-        res = self._get_response("raw-model-files", params)
+        res = self._get("raw-model-files", params, expected_code=400)
         return _build_raw_model_meta_objects(res)
 
     def moving_site_mean_location(
@@ -272,10 +272,8 @@ class APIClient:
     ) -> Location:
         if not isinstance(date, datetime.date):
             date = datetime.date.fromisoformat(date)
-        res = self._get_response(
-            f"sites/{site_id}/locations",
-            {"date": date},
-        )[0]
+        payload = {"date": date}
+        res = self._get(f"sites/{site_id}/locations", params=payload)[0]
         return Location(
             time=date,
             latitude=res["latitude"],
@@ -287,10 +285,8 @@ class APIClient:
     ) -> list[Location]:
         if not isinstance(date, datetime.date):
             date = datetime.date.fromisoformat(date)
-        locations = self._get_response(
-            f"sites/{site_id}/locations",
-            {"date": date, "raw": "1"},
-        )
+        payload = {"date": date, "raw": "1"}
+        locations = self._get(f"sites/{site_id}/locations", params=payload)
         return [
             Location(
                 time=datetime.datetime.fromisoformat(
@@ -305,7 +301,7 @@ class APIClient:
     def source_instruments(self, uuid: UUID | str) -> set[ExtendedInstrument]:
         """Recursively finds source instruments of a product file."""
         instruments = set()
-        res = self._get_response(f"files/{uuid}")[0]
+        res = self._get(f"files/{uuid}")[0]
         if res.get("instrument"):
             instrument = self.instrument(res["instrument"]["uuid"])
             instruments.add(instrument)
@@ -313,19 +309,11 @@ class APIClient:
             instruments |= self.source_instruments(source_id)
         return instruments
 
-    def calibration(
-        self, instrument_pid: str, date: datetime.date | str
-    ) -> dict | None:
+    def calibration(self, instrument_pid: str, date: datetime.date | str) -> dict:
         if not isinstance(date, datetime.date):
             date = datetime.date.fromisoformat(date)
         payload = {"instrumentPid": instrument_pid, "date": date.isoformat()}
-        try:
-            res = self._get_response("calibration", params=payload)
-            return res[0] if res else None
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 404:
-                return None
-            raise
+        return self._get("calibration", params=payload)[0]
 
     def download(
         self,
@@ -399,14 +387,22 @@ class APIClient:
             ]
         return metadata
 
-    def _get_response(self, endpoint: str, params: dict | None = None) -> list[dict]:
-        url = urljoin(self.base_url, endpoint)
-        res = self.session.get(url, params=params, timeout=120)
-        res.raise_for_status()
-        data = res.json()
-        if isinstance(data, dict):
-            data = [data]
-        return data
+    def _get(
+        self, endpoint: str, params: dict | None = None, expected_code: int = 404
+    ) -> list[dict]:
+        try:
+            url = urljoin(self.base_url, endpoint)
+            res = self.session.get(url, params=params, timeout=120)
+            res.raise_for_status()
+            data = res.json()
+            if isinstance(data, dict):
+                data = [data]
+            return data
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == expected_code:
+                reason = e.response.json().get("errors", "Not found")
+                raise CloudnetAPIError(reason) from e
+            raise
 
 
 def _add_date_params(
@@ -663,3 +659,13 @@ def _parse_datetime(dt: str) -> datetime.datetime:
 def _check_params(params: dict, ignore: tuple = ()) -> None:
     if sum(1 for key, value in params.items() if key not in ignore and value) == 0:
         raise TypeError("At least one of the parameters must be set.")
+
+
+def validate_type(type, values) -> None:
+    if type is not None:
+        if not isinstance(type, str | list):
+            raise ValueError(f"Invalid type: {type}")
+        type = [type] if isinstance(type, str) else type
+        for t in type:
+            if t not in get_args(values):
+                raise ValueError(f"Invalid type: {t}")

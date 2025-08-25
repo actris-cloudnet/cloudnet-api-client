@@ -21,7 +21,7 @@ from cloudnet_api_client.containers import (
     Site,
     VersionMetadata,
 )
-from cloudnet_api_client.utils import md5sum, sha256sum
+from cloudnet_api_client.utils import CloudnetAPIError, md5sum, sha256sum
 
 
 class RawFile(NamedTuple):
@@ -118,6 +118,10 @@ class TestSites:
         assert all("hidden" in site.type for site in sites)
         assert all("cloudnet" not in site.type for site in sites)
 
+    def test_sites_route_with_invalid_input(self, client: APIClient):
+        with pytest.raises(ValueError):
+            client.sites(type="xxx")  # type: ignore
+
     def test_site_route(self, client: APIClient):
         site = client.site("bucharest")
         assert isinstance(site, Site)
@@ -133,6 +137,10 @@ class TestSites:
         locations = client.moving_site_locations("boaty", "2022-01-01")
         assert isinstance(locations, list)
         assert all(isinstance(loc, Location) for loc in locations)
+
+    def test_invalid_site_id(self, client: APIClient):
+        with pytest.raises(CloudnetAPIError):
+            client.site("invalid-site-id")
 
 
 class TestProducts:
@@ -152,6 +160,14 @@ class TestProducts:
         assert all(
             product.type in [{"instrument"}, {"geophysical"}] for product in products
         )
+
+    def test_product_route_with_invalid_input_1(self, client: APIClient):
+        with pytest.raises(ValueError):
+            client.products(type="xxx")  # type: ignore
+
+    def test_product_route_with_invalid_input_2(self, client: APIClient):
+        with pytest.raises(ValueError):
+            client.products(type=32)  # type: ignore
 
     def test_product_route_with_categorize(self, client: APIClient):
         product = client.product("categorize")
@@ -178,6 +194,10 @@ class TestProducts:
         for instr in ("basta", "rpg-fmcw-94", "mira-35"):
             assert instr in product.source_instrument_ids
 
+    def test_product_route_with_invalid_input(self, client: APIClient):
+        with pytest.raises(CloudnetAPIError):
+            client.product("invalid-product-id")
+
 
 class TestModels:
     def test_models_route(self, client: APIClient):
@@ -189,6 +209,10 @@ class TestModels:
         model = client.model("arpege-12-23")
         assert isinstance(model, Model)
         assert model.forecast_start is not None
+
+    def test_model_route_with_invalid_input(self, client: APIClient):
+        with pytest.raises(CloudnetAPIError):
+            client.model("invalid-model-id")
 
 
 class TestInstruments:
@@ -210,6 +234,10 @@ class TestInstruments:
     def test_owners_is_tuple(self, client: APIClient):
         instrument = client.instrument("12da536f-0d07-41ea-9ced-f6cdeb97198b")
         assert isinstance(instrument.owners, tuple)
+
+    def test_instrument_route_with_invalid_input(self, client: APIClient):
+        with pytest.raises(CloudnetAPIError):
+            client.instrument("invalid-instrument-id")
 
 
 class TestProductFiles:
@@ -260,6 +288,10 @@ class TestProductFiles:
     def test_instrument_search(self, client: APIClient):
         meta = client.files(instrument_id="parsivel")
         assert len(meta) == 1
+
+    def test_files_route_with_invalid_input(self, client: APIClient):
+        with pytest.raises(CloudnetAPIError):
+            client.files(site_id="invalid-site")
 
 
 class TestRawFiles:
@@ -317,6 +349,10 @@ class TestRawFiles:
     def test_malformed_pid(self, client: APIClient):
         meta = client.raw_files(instrument_pid="not-a-valid-pid")
         assert len(meta) == 0
+
+    def test_raw_files_route_with_invalid_input(self, client: APIClient):
+        with pytest.raises(CloudnetAPIError):
+            client.raw_files(site_id="invalid-site")
 
 
 class TestDateParameterHandling:
