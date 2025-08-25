@@ -47,7 +47,7 @@ file_paths = await client.adownload(metadata)
 
 ## Documentation
 
-### `APIClient().file()` and `raw_files()` &rarr; `list[Metadata]`
+### `APIClient().files()` and `raw_files()` &rarr; `list[Metadata]`
 
 Fetch product and raw file metadata from the Cloudnet data portal.
 
