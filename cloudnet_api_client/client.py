@@ -60,7 +60,7 @@ class APIClient:
         self,
         type: SITE_TYPE | list[SITE_TYPE] | None = None,
     ) -> list[Site]:
-        validate_type(type, SITE_TYPE)
+        type = validate_type(type, SITE_TYPE)
         res = self._get("sites", {"type": type})
         return _build_objects(res, Site)
 
@@ -71,7 +71,7 @@ class APIClient:
     def products(
         self, type: PRODUCT_TYPE | list[PRODUCT_TYPE] | None = None
     ) -> list[Product]:
-        validate_type(type, PRODUCT_TYPE)
+        type = validate_type(type, PRODUCT_TYPE)
         data = self._get("products")
         if type is not None:
             data = [obj for obj in data if any(t in obj["type"] for t in type)]
@@ -674,7 +674,7 @@ def _check_params(params: dict, ignore: tuple = ()) -> None:
         raise TypeError("At least one of the parameters must be set.")
 
 
-def validate_type(type, values) -> None:
+def validate_type(type, values) -> list | None:
     if type is not None:
         if not isinstance(type, str | list):
             raise ValueError(f"Invalid type: {type}")
@@ -682,3 +682,4 @@ def validate_type(type, values) -> None:
         for t in type:
             if t not in get_args(values):
                 raise ValueError(f"Invalid type: {t}")
+    return type

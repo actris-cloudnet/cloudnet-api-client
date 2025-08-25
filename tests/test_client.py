@@ -153,10 +153,12 @@ class TestProducts:
 
     def test_products_route_with_type_filter(self, client: APIClient):
         products = client.products("instrument")
+        assert len(products) > 5
         assert all(product.type == {"instrument"} for product in products)
 
     def test_products_route_with_type_filter_combo(self, client: APIClient):
         products = client.products(["instrument", "geophysical"])
+        assert len(products) > 5
         assert all(
             product.type in [{"instrument"}, {"geophysical"}] for product in products
         )
