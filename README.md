@@ -122,16 +122,6 @@ Parameters:
 | ---- | -------------------- |
 | uuid | `str` or `uuid.UUID` |
 
-### `APIClient().versions()` &rarr; `list[VersionMetadata]`
-
-Fetch information of all versions of a file.
-
-Parameters:
-
-| name | type                 |
-| ---- | -------------------- |
-| uuid | `str` or `uuid.UUID` |
-
 ### `APIClient().sites()` &rarr; `list[Site]`
 
 Fetch cloudnet sites.
@@ -199,6 +189,16 @@ Parameters:
 | name     | type  |
 | -------- | ----- |
 | model_id | `str` |
+
+### `APIClient().versions()` &rarr; `list[VersionMetadata]`
+
+Fetch information of all versions of a file.
+
+Parameters:
+
+| name | type                 |
+| ---- | -------------------- |
+| uuid | `str` or `uuid.UUID` |
 
 ### `APIClient().download(list[Metadata])` &rarr; `list[Path]`
 

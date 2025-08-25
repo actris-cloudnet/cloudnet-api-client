@@ -512,7 +512,15 @@ def _parse_datetime_param(
     raise ValueError(msg)
 
 
-CONVERTED = {"measurement_date", "created_at", "updated_at", "size", "uuid"}
+CONVERTED = {
+    "measurement_date",
+    "created_at",
+    "updated_at",
+    "size",
+    "uuid",
+    "start_time",
+    "stop_time",
+}
 
 
 def _build_meta_objects(
@@ -541,6 +549,8 @@ def _build_meta_objects(
             measurement_date=datetime.date.fromisoformat(obj["measurementDate"]),
             created_at=_parse_datetime(obj["createdAt"]),
             updated_at=_parse_datetime(obj["updatedAt"]),
+            start_time=_parse_datetime(obj["startTime"]) if obj["startTime"] else None,
+            stop_time=_parse_datetime(obj["stopTime"]) if obj["stopTime"] else None,
             size=int(obj["size"]),
             uuid=UUID(obj["uuid"]),
             site=_build_object(obj["site"], Site),
