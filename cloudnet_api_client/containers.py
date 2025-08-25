@@ -91,7 +91,7 @@ class Metadata:
 class RawMetadata(Metadata):
     status: STATUS
     instrument: Instrument
-    tags: frozenset[str] | None
+    tags: frozenset[str]
 
 
 @dataclass(frozen=True, slots=True)
