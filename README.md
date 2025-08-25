@@ -180,6 +180,12 @@ Fetch cloudnet instruments.
 
 Fetch a single instruments.
 
+Parameters:
+
+| name | type  |
+| ---- | ----- |
+| uuid | `str` |
+
 ### `APIClient().models()` &rarr; `list[Model]`
 
 Fetch cloudnet models.
@@ -187,6 +193,12 @@ Fetch cloudnet models.
 ### `APIClient().instrument()` &rarr; `Model`
 
 Fetch a single model.
+
+Parameters:
+
+| name     | type  |
+| -------- | ----- |
+| model_id | `str` |
 
 ### `APIClient().download(list[Metadata])` &rarr; `list[Path]`
 
