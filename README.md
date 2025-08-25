@@ -124,7 +124,7 @@ Parameters:
 
 ### `APIClient().sites()` &rarr; `list[Site]`
 
-Fetch cloudnet sites.
+Fetch all sites.
 
 Parameters:
 
@@ -144,7 +144,7 @@ Parameters:
 
 ### `APIClient().products()` &rarr; `list[Product]`
 
-Fetch cloudnet products.
+Fetch all products.
 
 Parameters:
 
@@ -164,7 +164,7 @@ Parameters:
 
 ### `APIClient().instruments()` &rarr; `list[Instrument]`
 
-Fetch cloudnet instruments.
+Fetch all instruments.
 
 ### `APIClient().instrument()` &rarr; `ExtendedInstrument`
 
@@ -178,7 +178,7 @@ Parameters:
 
 ### `APIClient().models()` &rarr; `list[Model]`
 
-Fetch cloudnet models.
+Fetch all models.
 
 ### `APIClient().instrument()` &rarr; `Model`
 
