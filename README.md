@@ -47,7 +47,7 @@ file_paths = await client.adownload(metadata)
 
 ## Documentation
 
-### `APIClient().metadata()` and `raw_metadata()` &rarr; `list[Metadata]`
+### `APIClient().file()` and `raw_files()` &rarr; `list[Metadata]`
 
 Fetch product and raw file metadata from the Cloudnet data portal.
 
@@ -71,9 +71,9 @@ Parameters:
 | filename_suffix\*\* | `str` or `list[str]`        | `None`  | ".lv1"                                               |
 | status\*\*          | `str` or `list[str]`        | `None`  | "created", "uploaded", "processed" or "invalid"      |
 
-\* = only in `metadata()`
+\* = only in `files()`
 
-\*\* = only in `raw_metadata()`
+\*\* = only in `raw_files()`
 
 **Date Handling**
 
