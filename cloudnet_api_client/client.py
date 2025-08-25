@@ -291,9 +291,7 @@ class APIClient:
         locations = self._get(f"sites/{site_id}/locations", params=payload)
         return [
             Location(
-                time=datetime.datetime.fromisoformat(
-                    location["date"].replace("Z", "+00:00")
-                ),
+                time=_parse_datetime(location["date"]),
                 latitude=location["latitude"],
                 longitude=location["longitude"],
             )
@@ -668,7 +666,10 @@ def _make_session() -> requests.Session:
 
 
 def _parse_datetime(dt: str) -> datetime.datetime:
-    return datetime.datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S.%fZ")
+    try:
+        return datetime.datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S.%fZ")
+    except ValueError:
+        return datetime.datetime.strptime(dt, "%Y-%m-%dT%H:%M:%SZ")
 
 
 def _check_params(params: dict, ignore: tuple = ()) -> None:
