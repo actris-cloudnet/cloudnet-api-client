@@ -158,14 +158,14 @@ class APIClient:
         instrument_id: QueryParam = None,
         instrument_pid: QueryParam = None,
         model_id: QueryParam = None,
-        product: QueryParam = None,
+        product_id: QueryParam = None,
         show_legacy: bool = False,
     ) -> list[ProductMetadata]:
         params = {
             "site": site_id,
             "instrument": instrument_id,
             "instrumentPid": instrument_pid,
-            "product": product,
+            "product": product_id,
             "showLegacy": show_legacy,
         }
         if show_legacy is not True:
@@ -180,16 +180,16 @@ class APIClient:
 
         no_instrument = instrument_id is None and instrument_pid is None
 
-        if no_instrument and (product is None and model_id is not None):
+        if no_instrument and (product_id is None and model_id is not None):
             files_res = []
         else:
             files_res = self._get("files", params, expected_code=400)
 
         # Add model files if requested
         if (
-            (product is None and no_instrument)
-            or (product is not None and "model" in product)
-            or (model_id is not None and (product is None or "model" in product))
+            (product_id is None and no_instrument)
+            or (product_id is not None and "model" in product_id)
+            or (model_id is not None and (product_id is None or "model" in product_id))
         ):
             for key in ("showLegacy", "product", "instrument", "instrumentPid"):
                 if key in params:

@@ -272,7 +272,7 @@ class TestProductFiles:
         assert str(meta[0].uuid) == uuid
 
     def test_product_option(self, client: APIClient):
-        meta = client.files(site_id="hyytiala", product="iwc")
+        meta = client.files(site_id="hyytiala", product_id="iwc")
         assert len(meta) == 1
 
     def test_show_legacy_option(self, client: APIClient):

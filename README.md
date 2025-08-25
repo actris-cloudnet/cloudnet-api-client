@@ -65,7 +65,7 @@ Parameters:
 | instrument_id       | `str` or `list[str]`        | `None`  | "rpg-fmcw-94"                                        |
 | instrument_pid      | `str` or `list[str]`        | `None`  | "https://hdl.handle.net/21.12132/3.191564170f8a4686" |
 | model_id            | `str` or `list[str]`        | `None`  | "gdas1"                                              |
-| product\*           | `str` or `list[str]`        | `None`  | "classification"                                     |
+| product_id\*        | `str` or `list[str]`        | `None`  | "classification"                                     |
 | show_legacy\*       | `bool`                      | `False` |                                                      |
 | filename_prefix\*\* | `str` or `list[str]`        | `None`  | "stare"                                              |
 | filename_suffix\*\* | `str` or `list[str]`        | `None`  | ".lv1"                                               |
