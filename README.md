@@ -18,14 +18,25 @@ from cloudnet_api_client import APIClient
 
 client = APIClient()
 
-sites = client.sites(type="cloudnet")
+sites = client.sites()
+site = client.site("hyytiala")
+
 products = client.products()
+product = client.products("classification")
 
-metadata = client.metadata(site_id="hyytiala", date="2021-01-01", product=["mwr", "radar"])
-file_paths = client.download(metadata, "data/")
+models = client.models()
+model = client.model("ecmwf-open")
 
-raw_metadata = client.raw_metadata(site_id="granada", date="2024-01", instrument_id="parsivel")
-file_paths = client.download(raw_metadata, "data_raw/")
+instruments = client.instruments()
+instrument = client.instrument("d6bf209b-c48b-48a4-bbfb-fed713b27832")
+
+file = client.file("405cc410-1f24-4ea9-bae8-da7f22be26cb")
+
+files = client.files(site_id="hyytiala", date="2021-01-01", product_id=["mwr", "radar"])
+file_paths = client.download(files, "data/")
+
+raw_files = client.raw_files(site_id="granada", date="2024-01", instrument_id="parsivel")
+file_paths = client.download(raw_files, "data_raw/")
 ```
 
 When downloading files inside Jupyter notebook (or similar environment), you have to use the asynchronous version:
@@ -36,7 +47,7 @@ file_paths = await client.adownload(metadata)
 
 ## Documentation
 
-### `APIClient().metadata()` and `raw_metadata()` &rarr; `list[Metadata]`
+### `APIClient().files()` and `raw_files()` &rarr; `list[Metadata]`
 
 Fetch product and raw file metadata from the Cloudnet data portal.
 
@@ -54,15 +65,15 @@ Parameters:
 | instrument_id       | `str` or `list[str]`        | `None`  | "rpg-fmcw-94"                                        |
 | instrument_pid      | `str` or `list[str]`        | `None`  | "https://hdl.handle.net/21.12132/3.191564170f8a4686" |
 | model_id            | `str` or `list[str]`        | `None`  | "gdas1"                                              |
-| product\*           | `str` or `list[str]`        | `None`  | "classification"                                     |
+| product_id\*        | `str` or `list[str]`        | `None`  | "classification"                                     |
 | show_legacy\*       | `bool`                      | `False` |                                                      |
 | filename_prefix\*\* | `str` or `list[str]`        | `None`  | "stare"                                              |
 | filename_suffix\*\* | `str` or `list[str]`        | `None`  | ".lv1"                                               |
 | status\*\*          | `str` or `list[str]`        | `None`  | "created", "uploaded", "processed" or "invalid"      |
 
-\* = only in `metadata()`
+\* = only in `files()`
 
-\*\* = only in `raw_metadata()`
+\*\* = only in `raw_files()`
 
 **Date Handling**
 
@@ -111,6 +122,74 @@ Parameters:
 | ---- | -------------------- |
 | uuid | `str` or `uuid.UUID` |
 
+### `APIClient().sites()` &rarr; `list[Site]`
+
+Fetch all sites.
+
+Parameters:
+
+| name | type  | choices                                   | default |
+| ---- | ----- | ----------------------------------------- | ------- |
+| type | `str` | "cloudnet", "campaign", "model", "hidden" | `None`  |
+
+### `APIClient().site()` &rarr; `Site`
+
+Fetch a single site.
+
+Parameters:
+
+| name    | type  |
+| ------- | ----- |
+| site_id | `str` |
+
+### `APIClient().products()` &rarr; `list[Product]`
+
+Fetch all products.
+
+Parameters:
+
+| name | type                 | choices                                   | default |
+| ---- | -------------------- | ----------------------------------------- | ------- |
+| type | `str` or `list[str]` | "instrument", "geophysical", "evaluation" | `None`  |
+
+### `APIClient().product()` &rarr; `ExtendedProduct`
+
+Fetch a single product.
+
+Parameters:
+
+| name       | type  |
+| ---------- | ----- |
+| product_id | `str` |
+
+### `APIClient().instruments()` &rarr; `list[Instrument]`
+
+Fetch all instruments.
+
+### `APIClient().instrument()` &rarr; `ExtendedInstrument`
+
+Fetch a single instruments.
+
+Parameters:
+
+| name | type  |
+| ---- | ----- |
+| uuid | `str` |
+
+### `APIClient().models()` &rarr; `list[Model]`
+
+Fetch all models.
+
+### `APIClient().instrument()` &rarr; `Model`
+
+Fetch a single model.
+
+Parameters:
+
+| name     | type  |
+| -------- | ----- |
+| model_id | `str` |
+
 ### `APIClient().versions()` &rarr; `list[VersionMetadata]`
 
 Fetch information of all versions of a file.
@@ -120,31 +199,6 @@ Parameters:
 | name | type                 |
 | ---- | -------------------- |
 | uuid | `str` or `uuid.UUID` |
-
-### `APIClient().sites()` &rarr; `list[Site]`
-
-Fetch cloudnet sites.
-
-Parameters:
-
-| name    | type                 | choices                                   | default |
-| ------- | -------------------- | ----------------------------------------- | ------- |
-| site_id | `str`                |                                           | `None`  |
-| type    | `str` or `list[str]` | "cloudnet", "campaign", "model", "hidden" | `None`  |
-
-### `APIClient().products()` &rarr; `list[Product]`
-
-Fetch cloudnet products.
-
-Parameters:
-
-| name | type                 | choices                                   | default |
-| ---- | -------------------- | ----------------------------------------- | ------- |
-| type | `str` or `list[str]` | "instrument", "geophysical", "evaluation" | `None`  |
-
-### `APIClient().instruments()` &rarr; `list[Instrument]`
-
-Fetch cloudnet instruments.
 
 ### `APIClient().download(list[Metadata])` &rarr; `list[Path]`
 

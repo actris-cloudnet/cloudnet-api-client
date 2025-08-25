@@ -9,6 +9,13 @@ STATUS = Literal["created", "uploaded", "processed", "invalid"]
 
 
 @dataclass(frozen=True, slots=True)
+class Location:
+    time: datetime.datetime | datetime.date
+    latitude: float
+    longitude: float
+
+
+@dataclass(frozen=True, slots=True)
 class Site:
     id: str
     human_readable_name: str
@@ -21,7 +28,7 @@ class Site:
     country: str
     country_code: str
     country_subdivision_code: str | None
-    type: list[SITE_TYPE]
+    type: frozenset[SITE_TYPE]
     gaw: str | None
 
 
@@ -29,25 +36,37 @@ class Site:
 class Product:
     id: str
     human_readable_name: str
-    type: list[PRODUCT_TYPE]
+    type: frozenset[PRODUCT_TYPE]
     experimental: bool
 
 
 @dataclass(frozen=True, slots=True)
+class ExtendedProduct(Product):
+    source_instrument_ids: frozenset[str]
+    source_product_ids: frozenset[str]
+    derived_product_ids: frozenset[str]
+
+
+@dataclass(frozen=True, slots=True)
 class Instrument:
-    instrument_id: str | None  # CLU internal identifier, e.g. "rpg-fmcw-94"
+    instrument_id: str
     model: str  # From ACTRIS Vocabulary, e.g. "RPG-FMCW-94 DP"
     type: str  # From ACTRIS Vocabulary, e.g. "Doppler non-scanning cloud radar"
     name: str  # e.g. "FMI RPG-FMCW-94 (Pallas)"
     uuid: uuid.UUID
     pid: str
-    owners: list[str]
+    owners: tuple[str]  # could be ordered
     serial_number: str | None
 
 
 @dataclass(frozen=True, slots=True)
+class ExtendedInstrument(Instrument):
+    derived_product_ids: frozenset[str]
+
+
+@dataclass(frozen=True, slots=True)
 class Model:
-    model_id: str
+    id: str
     name: str
     optimum_order: int
     source_model_id: str
@@ -72,7 +91,7 @@ class Metadata:
 class RawMetadata(Metadata):
     status: STATUS
     instrument: Instrument
-    tags: list[str] | None
+    tags: frozenset[str] | None
 
 
 @dataclass(frozen=True, slots=True)

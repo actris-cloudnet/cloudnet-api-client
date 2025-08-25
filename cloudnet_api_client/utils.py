@@ -4,6 +4,12 @@ from os import PathLike
 from typing import Literal
 
 
+class CloudnetAPIError(Exception):
+    def __init__(self, msg: str):
+        self.message = msg
+        super().__init__(self.message)
+
+
 def sha256sum(filename: str | PathLike) -> str:
     return _calc_hash_sum(filename, "sha256")
 
