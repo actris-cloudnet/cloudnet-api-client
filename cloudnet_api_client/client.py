@@ -373,16 +373,13 @@ class APIClient:
             metadata = [
                 m
                 for m in metadata
-                if isinstance(m, RawMetadata)
-                and m.tags
-                and include_tag_subset.issubset(m.tags)
+                if isinstance(m, RawMetadata) and include_tag_subset.issubset(m.tags)
             ]
         if exclude_tag_subset:
             metadata = [
                 m
                 for m in metadata
                 if isinstance(m, RawMetadata)
-                and m.tags
                 and not exclude_tag_subset.issubset(m.tags)
             ]
         return metadata
