@@ -138,10 +138,19 @@ Fetch cloudnet sites.
 
 Parameters:
 
-| name    | type                 | choices                                   | default |
-| ------- | -------------------- | ----------------------------------------- | ------- |
-| site_id | `str`                |                                           | `None`  |
-| type    | `str` or `list[str]` | "cloudnet", "campaign", "model", "hidden" | `None`  |
+| name | type  | choices                                   | default |
+| ---- | ----- | ----------------------------------------- | ------- |
+| type | `str` | "cloudnet", "campaign", "model", "hidden" | `None`  |
+
+### `APIClient().site()` &rarr; `Site`
+
+Fetch a single site.
+
+Parameters:
+
+| name    | type  |
+| ------- | ----- |
+| site_id | `str` |
 
 ### `APIClient().products()` &rarr; `list[Product]`
 
@@ -153,9 +162,31 @@ Parameters:
 | ---- | -------------------- | ----------------------------------------- | ------- |
 | type | `str` or `list[str]` | "instrument", "geophysical", "evaluation" | `None`  |
 
+### `APIClient().product()` &rarr; `ExtendedProduct`
+
+Fetch a single product.
+
+Parameters:
+
+| name       | type  |
+| ---------- | ----- |
+| product_id | `str` |
+
 ### `APIClient().instruments()` &rarr; `list[Instrument]`
 
 Fetch cloudnet instruments.
+
+### `APIClient().instrument()` &rarr; `ExtendedInstrument`
+
+Fetch a single instruments.
+
+### `APIClient().models()` &rarr; `list[Model]`
+
+Fetch cloudnet models.
+
+### `APIClient().instrument()` &rarr; `Model`
+
+Fetch a single model.
 
 ### `APIClient().download(list[Metadata])` &rarr; `list[Path]`
 

@@ -7,6 +7,7 @@ import warnings
 from dataclasses import asdict, fields, is_dataclass
 from os import PathLike
 from pathlib import Path
+from platform import platform
 from typing import TypeVar, cast, get_args
 from urllib.parse import urljoin
 from uuid import UUID
@@ -646,7 +647,9 @@ def _set_of_ids(res: dict, name: str) -> frozenset[str]:
 
 def _make_session() -> requests.Session:
     session = requests.Session()
-    session.headers.update({"User-Agent": f"cloudnet-api-client/{__version__}"})
+    session.headers.update(
+        {"User-Agent": f"cloudnet-api-client/{__version__}({platform()})"}
+    )
     retry_strategy = Retry(total=10, backoff_factor=0.1, status_forcelist=[524])
     adapter = HTTPAdapter(max_retries=retry_strategy)
     session.mount("https://", adapter)
