@@ -658,7 +658,7 @@ def _set_of_ids(res: dict, name: str) -> frozenset[str]:
 def _make_session() -> requests.Session:
     session = requests.Session()
     session.headers.update(
-        {"User-Agent": f"cloudnet-api-client/{__version__}({platform()})"}
+        {"User-Agent": f"cloudnet-api-client/{__version__} ({platform()})"}
     )
     retry_strategy = Retry(total=10, backoff_factor=0.1, status_forcelist=[524])
     adapter = HTTPAdapter(max_retries=retry_strategy)
