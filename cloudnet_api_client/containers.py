@@ -127,6 +127,11 @@ class ProductMetadata(Metadata):
 
 
 @dataclass(frozen=True, slots=True)
+class ExtendedProductMetadata(ProductMetadata):
+    software: tuple[Software, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class VersionMetadata:
     uuid: uuid.UUID
     created_at: datetime.datetime

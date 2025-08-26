@@ -22,6 +22,7 @@ from cloudnet_api_client.containers import (
     STATUS,
     ExtendedInstrument,
     ExtendedProduct,
+    ExtendedProductMetadata,
     Instrument,
     Location,
     Model,
@@ -122,14 +123,18 @@ class APIClient:
     def file(
         self,
         uuid: str | UUID,
-    ) -> ProductMetadata:
+    ) -> ExtendedProductMetadata:
         file_res = self._get(f"files/{uuid}")[0]
         if file_res.get("instrument") is not None:
             instrument_uuid = file_res["instrument"]["uuid"]
             instrument_res = self._get(f"instrument-pids/{instrument_uuid}")[0]
         else:
             instrument_res = None
-        return _build_meta_objects([file_res], instrument_res)[0]
+        obj = _build_meta_objects([file_res], instrument_res)[0]
+        return ExtendedProductMetadata(
+            **_asdict_shallow(obj),
+            software=tuple(_build_objects(file_res["software"], Software)),
+        )
 
     def versions(self, uuid: str | UUID) -> list[VersionMetadata]:
         payload = {"properties": ["pid", "dvasId", "legacy", "size", "checksum"]}
@@ -675,6 +680,10 @@ def _parse_datetime(dt: str) -> datetime.datetime:
 def _check_params(params: dict, ignore: tuple = ()) -> None:
     if sum(1 for key, value in params.items() if key not in ignore and value) == 0:
         raise TypeError("At least one of the parameters must be set.")
+
+
+def _asdict_shallow(obj) -> dict:
+    return dict((field.name, getattr(obj, field.name)) for field in fields(obj))
 
 
 def validate_type(type, values) -> list | None:
