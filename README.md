@@ -166,6 +166,10 @@ Parameters:
 
 Fetch all instruments.
 
+### `APIClient().instrument_ids()` &rarr; `frozenset[str]`
+
+Fetch all instrument identifiers.
+
 ### `APIClient().instrument()` &rarr; `ExtendedInstrument`
 
 Fetch a single instruments.
@@ -180,7 +184,7 @@ Parameters:
 
 Fetch all models.
 
-### `APIClient().instrument()` &rarr; `Model`
+### `APIClient().model()` &rarr; `Model`
 
 Fetch a single model.
 
