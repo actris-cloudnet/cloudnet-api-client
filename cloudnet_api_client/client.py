@@ -552,7 +552,6 @@ def _build_meta_objects(
             size=int(obj["size"]),
             uuid=UUID(obj["uuid"]),
             site=_build_object(obj["site"], Site),
-            software=tuple(_build_objects(obj["software"], Software)),
         )
         for obj in res
     ]

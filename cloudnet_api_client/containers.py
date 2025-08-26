@@ -124,7 +124,6 @@ class ProductMetadata(Metadata):
     format: str
     start_time: datetime.datetime | None
     stop_time: datetime.datetime | None
-    software: tuple[Software, ...]
 
 
 @dataclass(frozen=True, slots=True)
