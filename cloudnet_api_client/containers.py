@@ -75,6 +75,14 @@ class Model:
 
 
 @dataclass(frozen=True, slots=True)
+class Software:
+    id: str
+    version: str
+    title: str
+    url: str
+
+
+@dataclass(frozen=True, slots=True)
 class Metadata:
     uuid: uuid.UUID
     checksum: str
@@ -115,6 +123,7 @@ class ProductMetadata(Metadata):
     format: str
     start_time: datetime.datetime | None
     stop_time: datetime.datetime | None
+    software: tuple[Software, ...]
 
 
 @dataclass(frozen=True, slots=True)

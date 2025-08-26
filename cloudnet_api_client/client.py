@@ -30,6 +30,7 @@ from cloudnet_api_client.containers import (
     RawMetadata,
     RawModelMetadata,
     Site,
+    Software,
     VersionMetadata,
 )
 from cloudnet_api_client.dl import download_files
@@ -526,7 +527,7 @@ def _build_meta_objects(
     field_names = (
         {f.name for f in fields(ProductMetadata)}
         - CONVERTED
-        - {"product", "instrument", "model", "site"}
+        - {"product", "instrument", "model", "site", "software"}
     )
     return [
         ProductMetadata(
@@ -546,6 +547,7 @@ def _build_meta_objects(
             size=int(obj["size"]),
             uuid=UUID(obj["uuid"]),
             site=_build_object(obj["site"], Site),
+            software=tuple(_build_objects(obj["software"], Software)),
         )
         for obj in res
     ]
