@@ -55,7 +55,7 @@ class Instrument:
     name: str  # e.g. "FMI RPG-FMCW-94 (Pallas)"
     uuid: uuid.UUID
     pid: str
-    owners: tuple[str]  # could be ordered
+    owners: tuple[str, ...]  # could be ordered
     serial_number: str | None
 
 
