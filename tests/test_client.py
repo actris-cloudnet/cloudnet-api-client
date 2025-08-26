@@ -142,6 +142,15 @@ class TestSites:
         with pytest.raises(CloudnetAPIError):
             client.site("invalid-site-id")
 
+    def test_sites_are_hashable(self, client: APIClient):
+        sites = client.sites()
+        for site in sites:
+            hash(site)
+
+    def test_site_is_hashable(self, client: APIClient):
+        site = client.site("bucharest")
+        hash(site)
+
 
 class TestProducts:
     def test_products_route(self, client: APIClient):
@@ -200,6 +209,15 @@ class TestProducts:
         with pytest.raises(CloudnetAPIError):
             client.product("invalid-product-id")
 
+    def test_products_are_hashable(self, client: APIClient):
+        products = client.products()
+        for product in products:
+            hash(product)
+
+    def test_product_is_hashable(self, client: APIClient):
+        product = client.product("categorize")
+        hash(product)
+
 
 class TestModels:
     def test_models_route(self, client: APIClient):
@@ -215,6 +233,15 @@ class TestModels:
     def test_model_route_with_invalid_input(self, client: APIClient):
         with pytest.raises(CloudnetAPIError):
             client.model("invalid-model-id")
+
+    def test_models_are_hashable(self, client: APIClient):
+        models = client.models()
+        for model in models:
+            hash(model)
+
+    def test_model_is_hashable(self, client: APIClient):
+        model = client.model("arpege-12-23")
+        hash(model)
 
 
 class TestInstruments:
@@ -240,6 +267,15 @@ class TestInstruments:
     def test_instrument_route_with_invalid_input(self, client: APIClient):
         with pytest.raises(CloudnetAPIError):
             client.instrument("invalid-instrument-id")
+
+    def test_instruments_are_hashable(self, client: APIClient):
+        instruments = client.instruments()
+        for instrument in instruments:
+            hash(instrument)
+
+    def test_instrument_is_hashable(self, client: APIClient):
+        instrument = client.instrument("12da536f-0d07-41ea-9ced-f6cdeb97198b")
+        hash(instrument)
 
 
 class TestProductFiles:
@@ -294,6 +330,11 @@ class TestProductFiles:
     def test_files_route_with_invalid_input(self, client: APIClient):
         with pytest.raises(CloudnetAPIError):
             client.files(site_id="invalid-site")
+
+    def test_file_is_hashable(self, client: APIClient):
+        uuid = "8dcc865c-6920-49ce-a627-de045ec896e8"
+        meta = client.file(uuid)
+        hash(meta)
 
 
 class TestRawFiles:
@@ -355,6 +396,11 @@ class TestRawFiles:
     def test_raw_files_route_with_invalid_input(self, client: APIClient):
         with pytest.raises(CloudnetAPIError):
             client.raw_files(site_id="invalid-site")
+
+    def test_raw_files_are_hashable(self, client: APIClient):
+        meta = client.raw_files(date_from="2025-08-01", date_to="2025-08-08")
+        for m in meta:
+            hash(m)
 
 
 class TestDateParameterHandling:
