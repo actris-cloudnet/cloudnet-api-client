@@ -531,12 +531,7 @@ def _build_meta_objects(
     return [
         ProductMetadata(
             **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
-            product=Product(
-                id=obj["product"]["id"],
-                human_readable_name=obj["product"]["humanReadableName"],
-                type=obj["product"]["type"],
-                experimental=obj["product"]["experimental"],
-            ),
+            product=_build_object(obj["product"], Product),
             instrument=_create_instrument_object(instrument_meta or obj["instrument"])
             if instrument_meta or "instrument" in obj and obj["instrument"]
             else None,
