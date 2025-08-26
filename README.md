@@ -176,9 +176,9 @@ Fetch a single instruments.
 
 Parameters:
 
-| name | type  |
-| ---- | ----- |
-| uuid | `str` |
+| name | type                 |
+| ---- | -------------------- |
+| uuid | `str` or `uuid.UUID` |
 
 ### `APIClient().models()` &rarr; `list[Model]`
 
