@@ -482,7 +482,9 @@ def _parse_datetime_param(
         }
         for fmt, unit in patterns:
             try:
-                start_date = datetime.datetime.strptime(dt, fmt)
+                start_date = datetime.datetime.strptime(dt, fmt).replace(
+                    tzinfo=datetime.timezone.utc
+                )
             except ValueError:
                 continue
             if unit == "years":
@@ -664,9 +666,13 @@ def _make_session() -> requests.Session:
 
 def _parse_datetime(dt: str) -> datetime.datetime:
     try:
-        return datetime.datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S.%fZ")
+        return datetime.datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+            tzinfo=datetime.timezone.utc
+        )
     except ValueError:
-        return datetime.datetime.strptime(dt, "%Y-%m-%dT%H:%M:%SZ")
+        return datetime.datetime.strptime(dt, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=datetime.timezone.utc
+        )
 
 
 def _check_params(params: dict, ignore: tuple = ()) -> None:
