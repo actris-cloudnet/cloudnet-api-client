@@ -13,10 +13,11 @@ from cloudnet_api_client.containers import (
     ExtendedInstrument,
     ExtendedProduct,
     Instrument,
-    Location,
+    MeanLocation,
     Model,
     Product,
     ProductMetadata,
+    RawLocation,
     RawMetadata,
     Site,
     VersionMetadata,
@@ -128,7 +129,7 @@ class TestSites:
 
     def test_moving_site_mean_location(self, client: APIClient):
         location = client.moving_site_mean_location("boaty", "2022-01-01")
-        assert isinstance(location, Location)
+        assert isinstance(location, MeanLocation)
         assert location.time == datetime.date(2022, 1, 1)
         assert round(location.latitude) == 60
         assert round(location.longitude) == 25
@@ -136,7 +137,8 @@ class TestSites:
     def test_moving_site_locations(self, client: APIClient):
         locations = client.moving_site_locations("boaty", "2022-01-01")
         assert isinstance(locations, list)
-        assert all(isinstance(loc, Location) for loc in locations)
+        assert all(isinstance(loc, RawLocation) for loc in locations)
+        assert all(loc.time.date().isoformat() == "2022-01-01" for loc in locations)
 
     def test_invalid_site_id(self, client: APIClient):
         with pytest.raises(CloudnetAPIError):

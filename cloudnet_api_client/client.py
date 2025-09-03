@@ -24,10 +24,11 @@ from cloudnet_api_client.containers import (
     ExtendedProduct,
     ExtendedProductMetadata,
     Instrument,
-    Location,
+    MeanLocation,
     Model,
     Product,
     ProductMetadata,
+    RawLocation,
     RawMetadata,
     RawModelMetadata,
     Site,
@@ -277,12 +278,12 @@ class APIClient:
 
     def moving_site_mean_location(
         self, site_id: str, date: datetime.date | str
-    ) -> Location:
+    ) -> MeanLocation:
         if not isinstance(date, datetime.date):
             date = datetime.date.fromisoformat(date)
         payload = {"date": date}
         res = self._get(f"sites/{site_id}/locations", params=payload)[0]
-        return Location(
+        return MeanLocation(
             time=date,
             latitude=res["latitude"],
             longitude=res["longitude"],
@@ -290,13 +291,13 @@ class APIClient:
 
     def moving_site_locations(
         self, site_id: str, date: datetime.date | str
-    ) -> list[Location]:
+    ) -> list[RawLocation]:
         if not isinstance(date, datetime.date):
             date = datetime.date.fromisoformat(date)
         payload = {"date": date, "raw": "1"}
         locations = self._get(f"sites/{site_id}/locations", params=payload)
         return [
-            Location(
+            RawLocation(
                 time=_parse_datetime(location["date"]),
                 latitude=location["latitude"],
                 longitude=location["longitude"],

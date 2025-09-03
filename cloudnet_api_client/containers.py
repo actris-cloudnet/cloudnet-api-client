@@ -10,8 +10,15 @@ TIMELINESS = Literal["rrt", "nrt", "scheduled"]
 
 
 @dataclass(frozen=True, slots=True)
-class Location:
-    time: datetime.datetime | datetime.date
+class MeanLocation:
+    time: datetime.date
+    latitude: float
+    longitude: float
+
+
+@dataclass(frozen=True, slots=True)
+class RawLocation:
+    time: datetime.datetime
     latitude: float
     longitude: float
 
