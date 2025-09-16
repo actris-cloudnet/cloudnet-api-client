@@ -119,9 +119,13 @@ class TestSites:
         assert all("hidden" in site.type for site in sites)
         assert all("cloudnet" not in site.type for site in sites)
 
-    def test_sites_route_with_invalid_input(self, client: APIClient):
+    def test_sites_route_with_invalid_input_1(self, client: APIClient):
         with pytest.raises(ValueError):
             client.sites(type="xxx")  # type: ignore
+
+    def test_sites_route_with_invalid_input_2(self, client: APIClient):
+        with pytest.raises(TypeError):
+            client.sites(type=32)  # type: ignore
 
     def test_site_route(self, client: APIClient):
         site = client.site("bucharest")
@@ -179,7 +183,7 @@ class TestProducts:
             client.products(type="xxx")  # type: ignore
 
     def test_product_route_with_invalid_input_2(self, client: APIClient):
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             client.products(type=32)  # type: ignore
 
     def test_product_route_with_categorize(self, client: APIClient):
