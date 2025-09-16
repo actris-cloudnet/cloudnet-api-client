@@ -4,11 +4,12 @@ import datetime
 import os
 import re
 import warnings
+from collections.abc import Iterable
 from dataclasses import asdict, fields, is_dataclass
 from os import PathLike
 from pathlib import Path
 from platform import platform
-from typing import TypeVar, cast, get_args
+from typing import TypeAlias, TypeVar, cast, get_args
 from urllib.parse import urljoin
 from uuid import UUID
 
@@ -41,11 +42,13 @@ from .utils import CloudnetAPIError
 from .version import __version__
 
 T = TypeVar("T")
-MetadataList = list[ProductMetadata] | list[RawMetadata] | list[RawModelMetadata]
+MetadataList = (
+    Iterable[ProductMetadata] | Iterable[RawMetadata] | Iterable[RawModelMetadata]
+)
 TMetadata = TypeVar("TMetadata", ProductMetadata, RawMetadata, RawModelMetadata)
 DateParam = str | datetime.date | None
 DateTimeParam = str | datetime.datetime | datetime.date | None
-QueryParam = str | list[str] | None
+QueryParam: TypeAlias = T | Iterable[T] | None
 
 
 class APIClient:
@@ -59,10 +62,7 @@ class APIClient:
         self.base_url = base_url
         self.session = session or _make_session()
 
-    def sites(
-        self,
-        type: SITE_TYPE | list[SITE_TYPE] | None = None,
-    ) -> list[Site]:
+    def sites(self, type: QueryParam[SITE_TYPE] = None) -> list[Site]:
         type = _validate_type(type, SITE_TYPE)
         res = self._get("sites", {"type": type})
         return _build_objects(res, Site)
@@ -71,9 +71,7 @@ class APIClient:
         res = self._get(f"sites/{site_id}")[0]
         return _build_object(res, Site)
 
-    def products(
-        self, type: PRODUCT_TYPE | list[PRODUCT_TYPE] | None = None
-    ) -> list[Product]:
+    def products(self, type: QueryParam[PRODUCT_TYPE] = None) -> list[Product]:
         type = _validate_type(type, PRODUCT_TYPE)
         data = self._get("products")
         if type is not None:
@@ -155,17 +153,17 @@ class APIClient:
 
     def files(
         self,
-        site_id: QueryParam = None,
+        site_id: QueryParam[str] = None,
         date: DateParam = None,
         date_from: DateParam = None,
         date_to: DateParam = None,
         updated_at: DateTimeParam = None,
         updated_at_from: DateTimeParam = None,
         updated_at_to: DateTimeParam = None,
-        instrument_id: QueryParam = None,
-        instrument_pid: QueryParam = None,
-        model_id: QueryParam = None,
-        product_id: QueryParam = None,
+        instrument_id: QueryParam[str] = None,
+        instrument_pid: QueryParam[str] = None,
+        model_id: QueryParam[str] = None,
+        product_id: QueryParam[str] = None,
         show_legacy: bool = False,
     ) -> list[ProductMetadata]:
         params = {
@@ -212,18 +210,18 @@ class APIClient:
 
     def raw_files(
         self,
-        site_id: QueryParam = None,
+        site_id: QueryParam[str] = None,
         date: DateParam = None,
         date_from: DateParam = None,
         date_to: DateParam = None,
         updated_at: DateTimeParam = None,
         updated_at_from: DateTimeParam = None,
         updated_at_to: DateTimeParam = None,
-        instrument_id: QueryParam = None,
-        instrument_pid: QueryParam = None,
-        filename_prefix: QueryParam = None,
-        filename_suffix: QueryParam = None,
-        status: STATUS | list[STATUS] | None = None,
+        instrument_id: QueryParam[str] = None,
+        instrument_pid: QueryParam[str] = None,
+        filename_prefix: QueryParam[str] = None,
+        filename_suffix: QueryParam[str] = None,
+        status: QueryParam[STATUS] = None,
     ) -> list[RawMetadata]:
         params = {
             "site": site_id,
@@ -247,17 +245,17 @@ class APIClient:
 
     def raw_model_files(
         self,
-        site_id: QueryParam = None,
-        model_id: QueryParam = None,
+        site_id: QueryParam[str] = None,
+        model_id: QueryParam[str] = None,
         date: DateParam = None,
         date_from: DateParam = None,
         date_to: DateParam = None,
         updated_at: DateTimeParam = None,
         updated_at_from: DateTimeParam = None,
         updated_at_to: DateTimeParam = None,
-        filename_prefix: QueryParam = None,
-        filename_suffix: QueryParam = None,
-        status: STATUS | list[STATUS] | None = None,
+        filename_prefix: QueryParam[str] = None,
+        filename_suffix: QueryParam[str] = None,
+        status: QueryParam[STATUS] = None,
     ) -> list[RawModelMetadata]:
         """For internal CLU use only. Will change in the future."""
         params = {
@@ -686,12 +684,15 @@ def _asdict_shallow(obj) -> dict:
     return dict((field.name, getattr(obj, field.name)) for field in fields(obj))
 
 
-def _validate_type(type, values) -> list | None:
-    if type is not None:
-        if not isinstance(type, str | list):
-            raise ValueError(f"Invalid type: {type}")
-        type = [type] if isinstance(type, str) else type
-        for t in type:
-            if t not in get_args(values):
-                raise ValueError(f"Invalid type: {t}")
-    return type
+def _validate_type(values, literal) -> list | None:
+    if values is None:
+        return None
+    if isinstance(values, str):
+        values = [values]
+    allowed_values = get_args(literal)
+    output = []
+    for value in values:
+        if value not in allowed_values:
+            raise ValueError(f"Invalid type: {value}")
+        output.append(value)
+    return output

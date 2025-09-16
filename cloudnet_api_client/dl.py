@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections.abc import Iterable
 from pathlib import Path
 
 import aiohttp
@@ -7,16 +8,12 @@ from tqdm import tqdm
 from tqdm.asyncio import tqdm_asyncio
 
 from cloudnet_api_client import utils
-from cloudnet_api_client.containers import (
-    ProductMetadata,
-    RawMetadata,
-    RawModelMetadata,
-)
+from cloudnet_api_client.containers import Metadata, ProductMetadata
 
 
 async def download_files(
     base_url: str,
-    metadata: list[ProductMetadata] | list[RawMetadata] | list[RawModelMetadata],
+    metadata: Iterable[Metadata],
     output_path: Path,
     concurrency_limit: int,
     disable_progress: bool | None,
@@ -99,16 +96,12 @@ async def _download_file(
         logging.debug(f"Downloaded: {destination}")
 
 
-def _checksum_matches(
-    meta: ProductMetadata | RawMetadata | RawModelMetadata, destination: Path
-) -> bool:
+def _checksum_matches(meta: Metadata, destination: Path) -> bool:
     fun = utils.sha256sum if isinstance(meta, ProductMetadata) else utils.md5sum
     return fun(destination) == meta.checksum
 
 
-def _size_and_name_matches(
-    meta: ProductMetadata | RawMetadata | RawModelMetadata, destination: Path
-) -> bool:
+def _size_and_name_matches(meta: Metadata, destination: Path) -> bool:
     return (
         destination.stat().st_size == meta.size
         and destination.name == meta.download_url.split("/")[-1]
