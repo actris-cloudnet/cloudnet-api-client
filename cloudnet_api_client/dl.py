@@ -1,14 +1,48 @@
 import asyncio
 import logging
 from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
 
 import aiohttp
 from tqdm import tqdm
-from tqdm.asyncio import tqdm_asyncio
 
 from cloudnet_api_client import utils
 from cloudnet_api_client.containers import Metadata, ProductMetadata
+
+
+class BarConfig:
+    def __init__(self, quiet: bool | None, max_workers: int, total_bytes: int) -> None:
+        self.quiet = quiet
+        self.position_queue = self._init_position_queue(max_workers)
+        self.total_amount = tqdm(
+            total=total_bytes,
+            desc="Total amount",
+            unit="iB",
+            unit_scale=True,
+            unit_divisor=1024,
+            disable=self.quiet,
+            position=0,
+            leave=False,
+            colour="green",
+        )
+        self.lock = asyncio.Lock()
+
+    def _init_position_queue(self, max_workers: int) -> asyncio.Queue:
+        queue: asyncio.Queue = asyncio.Queue()
+        for i in range(1, max_workers + 1):
+            queue.put_nowait(i)
+        return queue
+
+
+@dataclass
+class DlParams:
+    url: str
+    destination: Path
+    session: aiohttp.ClientSession
+    semaphore: asyncio.Semaphore
+    bar_config: BarConfig
+    quiet: bool | None
 
 
 async def download_files(
@@ -19,81 +53,89 @@ async def download_files(
     disable_progress: bool | None,
     validate_checksum: bool = False,
 ) -> list[Path]:
+    metas = list(metadata)
     file_exists = _checksum_matches if validate_checksum else _size_and_name_matches
     semaphore = asyncio.Semaphore(concurrency_limit)
+    total_bytes = sum(meta.size for meta in metas)
+    bar_config = BarConfig(disable_progress, concurrency_limit, total_bytes)
     full_paths = []
     async with aiohttp.ClientSession() as session:
         tasks = []
-        for meta in metadata:
+        for meta in metas:
             download_url = f"{base_url}{meta.download_url.split('/api/')[-1]}"
             destination = output_path / meta.download_url.split("/")[-1]
             full_paths.append(destination)
             if destination.exists() and file_exists(meta, destination):
                 logging.debug(f"Already downloaded: {destination}")
                 continue
-            task = asyncio.create_task(
-                _download_file_with_retries(
-                    session, download_url, destination, semaphore, disable_progress
-                )
+            dl_params = DlParams(
+                url=download_url,
+                destination=destination,
+                session=session,
+                semaphore=semaphore,
+                bar_config=bar_config,
+                quiet=disable_progress,
             )
+            task = asyncio.create_task(_download_file_with_retries(dl_params))
             tasks.append(task)
-        await tqdm_asyncio.gather(
-            *tasks, desc="Completed files", disable=disable_progress
-        )
+        await asyncio.gather(*tasks)
+        bar_config.total_amount.close()
+        bar_config.total_amount.clear()
     return full_paths
 
 
 async def _download_file_with_retries(
-    session: aiohttp.ClientSession,
-    url: str,
-    destination: Path,
-    semaphore: asyncio.Semaphore,
-    disable_progress: bool | None,
+    params: DlParams,
     max_retries: int = 3,
 ) -> None:
     """Attempt to download a file, retrying up to max_retries times if needed."""
-    for attempt in range(1, max_retries + 1):
-        try:
-            await _download_file(session, url, destination, semaphore, disable_progress)
-            return
-        except aiohttp.ClientError as e:
-            logging.warning(f"Attempt {attempt} failed for {url}: {e}")
-            if attempt == max_retries:
-                logging.error(f"Giving up on {url} after {max_retries} attempts.")
-                raise e
-            else:
-                # Exponential backoff before retrying
-                await asyncio.sleep(2**attempt)
+    position = await params.bar_config.position_queue.get()
+    try:
+        for attempt in range(1, max_retries + 1):
+            try:
+                await _download_file(params, position)
+                return
+            except aiohttp.ClientError as e:
+                logging.warning(f"Attempt {attempt} failed for {params.url}: {e}")
+                if attempt == max_retries:
+                    logging.error(
+                        f"Giving up on {params.url} after {max_retries} attempts."
+                    )
+                    raise e
+                else:
+                    # Exponential backoff before retrying
+                    await asyncio.sleep(2**attempt)
+    finally:
+        params.bar_config.position_queue.put_nowait(position)
+    raise RuntimeError("Unreachable code reached.")
 
 
 async def _download_file(
-    session: aiohttp.ClientSession,
-    url: str,
-    destination: Path,
-    semaphore: asyncio.Semaphore,
-    disable_progress: bool | None,
+    params: DlParams,
+    position: int,
 ) -> None:
-    async with semaphore:
-        async with session.get(url) as response:
-            response.raise_for_status()
-            with (
-                destination.open("wb") as file_out,
-                tqdm(
-                    desc=destination.name,
-                    total=response.content_length,
-                    unit="iB",
-                    unit_scale=True,
-                    unit_divisor=1024,
-                    disable=disable_progress,
-                ) as bar,
-            ):
-                while True:
-                    chunk = await response.content.read(8192)
-                    if not chunk:
-                        break
-                    file_out.write(chunk)
+    async with params.semaphore, params.session.get(params.url) as response:
+        response.raise_for_status()
+        bar = tqdm(
+            desc=params.destination.name,
+            total=response.content_length,
+            unit="iB",
+            unit_scale=True,
+            unit_divisor=1024,
+            disable=params.bar_config.quiet,
+            position=position,
+            leave=False,
+            colour="cyan",
+        )
+        try:
+            with params.destination.open("wb") as f:
+                while chunk := await response.content.read(8192):
+                    f.write(chunk)
                     bar.update(len(chunk))
-        logging.debug(f"Downloaded: {destination}")
+                    params.bar_config.total_amount.update(len(chunk))
+        finally:
+            bar.close()
+            bar.clear()
 
 
 def _checksum_matches(meta: Metadata, destination: Path) -> bool:

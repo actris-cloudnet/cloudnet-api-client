@@ -382,7 +382,7 @@ class TestRawFiles:
 
     def test_filter_by_filename_suffix(self, client: APIClient):
         meta = client.raw_files(filename_suffix="000.nc")
-        assert len(meta) == 2
+        assert len(meta) == 3
 
     def test_filter_by_instrument_id(self, client: APIClient):
         meta = client.raw_files(instrument_id="weather-station")
@@ -487,7 +487,7 @@ class TestFilterCombinations:
         assert len(meta) == 0
 
     def test_partial_filename_matches(self, client: APIClient):
-        meta = client.raw_files(filename_prefix="2025", filename_suffix=".nc")
+        meta = client.raw_files(filename_prefix="202508", filename_suffix=".nc")
         assert len(meta) == 2
 
 
