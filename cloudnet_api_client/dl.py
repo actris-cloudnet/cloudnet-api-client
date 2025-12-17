@@ -114,6 +114,7 @@ async def _download_file(
     params: DlParams,
     position: int,
 ) -> None:
+    tmp_path = params.destination.with_suffix(f"{params.destination.suffix}.part")
     async with params.semaphore, params.session.get(params.url) as response:
         response.raise_for_status()
         bar = tqdm(
@@ -128,11 +129,20 @@ async def _download_file(
             colour="cyan",
         )
         try:
-            with params.destination.open("wb") as f:
-                while chunk := await response.content.read(8192):
+            tmp_path.parent.mkdir(parents=True, exist_ok=True)
+            with tmp_path.open("wb") as f:
+                async for chunk in response.content.iter_chunked(8192):
                     f.write(chunk)
                     bar.update(len(chunk))
                     params.bar_config.total_amount.update(len(chunk))
+            tmp_path.replace(params.destination)
+        except Exception:
+            try:
+                if tmp_path.exists():
+                    tmp_path.unlink()
+            except OSError:
+                pass
+            raise
         finally:
             bar.close()
             bar.clear()
