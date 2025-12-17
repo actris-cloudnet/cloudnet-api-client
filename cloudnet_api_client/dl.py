@@ -78,9 +78,13 @@ async def download_files(
             )
             task = asyncio.create_task(_download_file_with_retries(dl_params))
             tasks.append(task)
+        if disable_progress is True:
+            print(f"Downloading {len(metas)} files...", end="", flush=True)
         await asyncio.gather(*tasks)
         bar_config.total_amount.close()
         bar_config.total_amount.clear()
+    if disable_progress is True:
+        print(" done.", flush=True)
     return full_paths
 
 
