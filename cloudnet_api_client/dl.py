@@ -17,7 +17,7 @@ class BarConfig:
         self.position_queue = self._init_position_queue(max_workers)
         self.total_amount = tqdm(
             total=total_bytes,
-            desc="Total amount",
+            desc="Progress",
             unit="iB",
             unit_scale=True,
             unit_divisor=1024,
