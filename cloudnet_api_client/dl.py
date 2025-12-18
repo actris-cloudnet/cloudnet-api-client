@@ -12,8 +12,10 @@ from cloudnet_api_client.containers import Metadata, ProductMetadata
 
 
 class BarConfig:
-    def __init__(self, quiet: bool | None, max_workers: int, total_bytes: int) -> None:
-        self.quiet = quiet
+    def __init__(
+        self, disable: bool | None, max_workers: int, total_bytes: int
+    ) -> None:
+        self.disable = disable
         self.position_queue = self._init_position_queue(max_workers)
         self.total_amount = tqdm(
             total=total_bytes,
@@ -21,7 +23,7 @@ class BarConfig:
             unit="iB",
             unit_scale=True,
             unit_divisor=1024,
-            disable=self.quiet,
+            disable=self.disable,
             position=0,
             leave=False,
             colour="green",
@@ -42,7 +44,7 @@ class DlParams:
     session: aiohttp.ClientSession
     semaphore: asyncio.Semaphore
     bar_config: BarConfig
-    quiet: bool | None
+    disable: bool | None
 
 
 async def download_files(
@@ -74,7 +76,7 @@ async def download_files(
                 session=session,
                 semaphore=semaphore,
                 bar_config=bar_config,
-                quiet=disable_progress,
+                disable=disable_progress,
             )
             task = asyncio.create_task(_download_file_with_retries(dl_params))
             tasks.append(task)
@@ -127,7 +129,7 @@ async def _download_file(
             unit="iB",
             unit_scale=True,
             unit_divisor=1024,
-            disable=params.bar_config.quiet,
+            disable=params.bar_config.disable,
             position=position,
             leave=False,
             colour="cyan",
