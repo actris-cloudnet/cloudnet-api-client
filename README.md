@@ -22,7 +22,7 @@ sites = client.sites()
 site = client.site("hyytiala")
 
 products = client.products()
-product = client.products("classification")
+product = client.product("classification")
 
 models = client.models()
 model = client.model("ecmwf-open")
