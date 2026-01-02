@@ -322,7 +322,7 @@ class APIClient:
 
     def download(
         self,
-        metadata: MetadataList,
+        metadata: MetadataList | TMetadata,
         output_directory: str | PathLike = ".",
         concurrency_limit: int = 5,
         progress: bool | None = None,
@@ -340,7 +340,7 @@ class APIClient:
 
     async def adownload(
         self,
-        metadata: MetadataList,
+        metadata: MetadataList | TMetadata,
         output_directory: str | PathLike = ".",
         concurrency_limit: int = 5,
         progress: bool | None = None,

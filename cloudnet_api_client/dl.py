@@ -8,7 +8,10 @@ import aiohttp
 from tqdm import tqdm
 
 from cloudnet_api_client import utils
-from cloudnet_api_client.containers import Metadata, ProductMetadata
+from cloudnet_api_client.containers import (
+    Metadata,
+    ProductMetadata,
+)
 
 
 class BarConfig:
@@ -49,13 +52,13 @@ class DlParams:
 
 async def download_files(
     base_url: str,
-    metadata: Iterable[Metadata],
+    metadata: Iterable[Metadata] | Metadata,
     output_path: Path,
     concurrency_limit: int,
     disable_progress: bool | None,
     validate_checksum: bool = False,
 ) -> list[Path]:
-    metas = list(metadata)
+    metas = list(metadata) if isinstance(metadata, Iterable) else [metadata]
     file_exists = _checksum_matches if validate_checksum else _size_and_name_matches
     semaphore = asyncio.Semaphore(concurrency_limit)
     total_bytes = sum(meta.size for meta in metas)

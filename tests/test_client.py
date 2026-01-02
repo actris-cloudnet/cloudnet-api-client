@@ -462,6 +462,19 @@ class TestDownloadingFunctionality:
         assert paths1 == paths2
         assert paths2[0].stat().st_size == original_size
 
+    def test_downloading_single_metadata(self, client: APIClient, tmp_path: Path):
+        uuid = "ab872770-9136-4e61-8958-31e62abdfb1b"
+        meta = client.file(uuid)
+        paths = client.download(meta, output_directory=tmp_path, progress=False)
+        assert len(paths) == 1
+        assert paths[0].exists()
+
+    def test_downloading_single_metadata_II(self, client: APIClient, tmp_path: Path):
+        meta = client.raw_files(date_from="2025-08-01")
+        assert len(meta) == 3
+        paths = client.download(meta[0], output_directory=tmp_path, progress=False)
+        assert len(paths) == 1
+
     async def test_async_download(self, client: APIClient, tmp_path: Path):
         meta = client.raw_files(date_from="2025-08-01")
         assert len(meta) == 3
