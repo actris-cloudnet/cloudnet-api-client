@@ -212,7 +212,7 @@ Parameters:
 
 | name              | type                                           | default           |
 | ----------------- | ---------------------------------------------- | ----------------- |
-| metadata          | `list[RawMetadata]` or `list[ProductMetadata]` |                   |
+| metadata          | `RawMetadata`, `ProductMetadata` or `list[...]`             |                   |
 | output_directory  | `PathLike` or `str`                            | Current directory |
 | concurrency_limit | `int`                                          | 5                 |
 | progress          | `bool` or `None`                               | `None`            |
