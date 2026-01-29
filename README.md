@@ -210,13 +210,13 @@ Download files from the fetched metadata.
 
 Parameters:
 
-| name              | type                                           | default           |
-| ----------------- | ---------------------------------------------- | ----------------- |
-| metadata          | `RawMetadata`, `ProductMetadata` or `list[...]`             |                   |
-| output_directory  | `PathLike` or `str`                            | Current directory |
-| concurrency_limit | `int`                                          | 5                 |
-| progress          | `bool` or `None`                               | `None`            |
-| validate_checksum | `bool`                                         | `False`           |
+| name              | type                                            | default           |
+| ----------------- | ----------------------------------------------- | ----------------- |
+| metadata          | `RawMetadata`, `ProductMetadata` or `list[...]` |                   |
+| output_directory  | `PathLike` or `str`                             | Current directory |
+| concurrency_limit | `int`                                           | 5                 |
+| progress          | `bool` or `None`                                | `None`            |
+| validate_checksum | `bool`                                          | `False`           |
 
 There's also an asynchronous version of this function:
 `cloudnet_api_client.adownload`. It's useful for usage inside Jupyter notebook.
