@@ -62,3 +62,7 @@ jobs:
       - name: Shutdown backend
         if: always()
         run: docker compose -f .github/docker-compose.yml down
+
+      - name: Print logs
+        if: always()
+        run: docker compose -f .github/docker-compose.yml logs
