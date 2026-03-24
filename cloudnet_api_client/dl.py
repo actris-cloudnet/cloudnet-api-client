@@ -16,9 +16,14 @@ from cloudnet_api_client.containers import (
 
 class BarConfig:
     def __init__(
-        self, disable: bool | None, max_workers: int, total_bytes: int
+        self,
+        disable: bool | None,
+        max_workers: int,
+        total_bytes: int,
+        n_files: int,
     ) -> None:
         self.disable = disable
+        self.single_file = n_files <= 1
         self.position_queue = self._init_position_queue(max_workers)
         self.total_amount = tqdm(
             total=total_bytes,
@@ -26,7 +31,7 @@ class BarConfig:
             unit="iB",
             unit_scale=True,
             unit_divisor=1024,
-            disable=self.disable,
+            disable=self.disable if not self.single_file else True,
             position=0,
             leave=False,
             colour="green",
@@ -35,7 +40,8 @@ class BarConfig:
 
     def _init_position_queue(self, max_workers: int) -> asyncio.Queue:
         queue: asyncio.Queue = asyncio.Queue()
-        for i in range(1, max_workers + 1):
+        start = 0 if self.single_file else 1
+        for i in range(start, start + max_workers):
             queue.put_nowait(i)
         return queue
 
@@ -62,7 +68,7 @@ async def download_files(
     file_exists = _checksum_matches if validate_checksum else _size_and_name_matches
     semaphore = asyncio.Semaphore(concurrency_limit)
     total_bytes = sum(meta.size for meta in metas)
-    bar_config = BarConfig(disable_progress, concurrency_limit, total_bytes)
+    bar_config = BarConfig(disable_progress, concurrency_limit, total_bytes, len(metas))
     full_paths = []
     async with aiohttp.ClientSession() as session:
         tasks = []
