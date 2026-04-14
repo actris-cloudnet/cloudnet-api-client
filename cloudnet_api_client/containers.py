@@ -131,6 +131,7 @@ class ProductMetadata(Metadata):
     format: str
     start_time: datetime.datetime | None
     stop_time: datetime.datetime | None
+    s3key: str | None
 
 
 @dataclass(frozen=True, slots=True)

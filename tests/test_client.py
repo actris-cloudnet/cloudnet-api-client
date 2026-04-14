@@ -536,6 +536,7 @@ def _submit_product_file(backend_url: str, data_path: Path, meta: File):
             "uuid": str(UUID(nc.file_uuid)),
             "pid": nc.pid,
             "instrumentPid": getattr(nc, "instrument_pid", None),
+            "s3key": None,
             **file_info,
         }
         payload["model"] = product if payload["product"] == "model" else None
