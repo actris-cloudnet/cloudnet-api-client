@@ -11,6 +11,7 @@ from cloudnet_api_client import utils
 from cloudnet_api_client.containers import (
     Metadata,
     ProductMetadata,
+    RawMetadata,
 )
 
 
@@ -74,7 +75,16 @@ async def download_files(
         tasks = []
         for meta in metas:
             download_url = f"{base_url}{meta.download_url.split('/api/')[-1]}"
-            destination = output_path / meta.download_url.split("/")[-1]
+            ourdir = output_path / meta.site.id / meta.measurement_date.isoformat()
+            if isinstance(meta, RawMetadata):
+                ourdir = (
+                    ourdir
+                    / f"{meta.instrument.instrument_id}_{meta.instrument.uuid.hex[:8]}"
+                )
+                if meta.tags:
+                    ourdir = ourdir / "-".join(sorted(meta.tags))
+            ourdir.mkdir(exist_ok=True, parents=True)
+            destination = ourdir / meta.download_url.split("/")[-1]
             full_paths.append(destination)
             if destination.exists() and file_exists(meta, destination):
                 logging.debug(f"Already downloaded: {destination}")
