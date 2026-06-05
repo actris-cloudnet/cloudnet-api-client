@@ -3,7 +3,16 @@ import uuid
 from dataclasses import dataclass
 from typing import Literal
 
-SITE_TYPE = Literal["cloudnet", "model", "hidden", "campaign", "mobile", "arm"]
+SITE_TYPE = Literal[
+    "cloudnet",
+    "model",
+    "hidden",
+    "campaign",
+    "mobile",
+    "arm",
+    "weather-radar",
+    "fmi-radar",
+]
 PRODUCT_TYPE = Literal["instrument", "geophysical", "evaluation", "model"]
 STATUS = Literal["created", "uploaded", "processed", "invalid"]
 TIMELINESS = Literal["rrt", "nrt", "scheduled"]
