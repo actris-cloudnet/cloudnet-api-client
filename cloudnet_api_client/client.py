@@ -171,6 +171,7 @@ class APIClient:
             "instrument": instrument_id,
             "instrumentPid": instrument_pid,
             "product": product_id,
+            "model": model_id,
             "showLegacy": show_legacy,
         }
         if show_legacy is not True:
@@ -181,7 +182,7 @@ class APIClient:
             params, date, date_from, date_to, updated_at, updated_at_from, updated_at_to
         )
 
-        _check_params({**params, "model": model_id}, ("showLegacy",))
+        _check_params(params, ("showLegacy",))
 
         no_instrument = instrument_id is None and instrument_pid is None
 
@@ -199,7 +200,6 @@ class APIClient:
             for key in ("showLegacy", "product", "instrument", "instrumentPid"):
                 if key in params:
                     del params[key]
-            params["model"] = model_id
             files_res += self._get("model-files", params, expected_code=400)
 
         return _build_meta_objects(files_res)
