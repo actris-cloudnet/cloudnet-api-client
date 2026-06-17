@@ -24,6 +24,16 @@ from cloudnet_api_client.containers import (
 )
 from cloudnet_api_client.utils import CloudnetAPIError, md5sum, sha256sum
 
+# Product file UUIDs (submitted by the files_product fixture).
+CLASSIFICATION_UUID = "8dcc865c-6920-49ce-a627-de045ec896e8"
+PARSIVEL_UUID = "ab872770-9136-4e61-8958-31e62abdfb1b"
+ECMWF_OPEN_UUID = "277d54f0-d376-4448-a784-f1c8b819b46a"
+
+# Raw file instrument PIDs (submitted by the files_raw fixture).
+BUCHAREST_CHM15K_PID = "https://hdl.handle.net/21.12132/3.c60c931fac9d43f0"
+GRANADA_CHM15K_PID = "https://hdl.handle.net/21.12132/3.77a75f3b32294855"
+JUELICH_WST_PID = "https://hdl.handle.net/21.12132/3.726b3b29de1949cc"
+
 
 class RawFile(NamedTuple):
     filename: str
@@ -63,21 +73,21 @@ def files_raw() -> list[RawFile]:
             site="bucharest",
             instrument="chm15k",
             date="2025-08-01",
-            pid="https://hdl.handle.net/21.12132/3.c60c931fac9d43f0",
+            pid=BUCHAREST_CHM15K_PID,
         ),
         RawFile(
             filename="20250808_Granada_CHM170119_0045_000.nc",
             site="granada",
             instrument="chm15k",
             date="2025-08-08",
-            pid="https://hdl.handle.net/21.12132/3.77a75f3b32294855",
+            pid=GRANADA_CHM15K_PID,
         ),
         RawFile(
             filename="20250803_JOYCE_WST_01m.dat",
             site="juelich",
             instrument="weather-station",
             date="2025-08-01",
-            pid="https://hdl.handle.net/21.12132/3.726b3b29de1949cc",
+            pid=JUELICH_WST_PID,
         ),
     ]
 
@@ -294,34 +304,30 @@ class TestInstruments:
 
 class TestProductFiles:
     def test_file_route_with_geophysical_product(self, client: APIClient):
-        uuid = "8dcc865c-6920-49ce-a627-de045ec896e8"
-        meta = client.file(uuid)
+        meta = client.file(CLASSIFICATION_UUID)
         assert isinstance(meta, ProductMetadata)
-        assert str(meta.uuid) == uuid
+        assert str(meta.uuid) == CLASSIFICATION_UUID
         assert meta.instrument is None
         assert meta.model is None
         assert meta.product.id == "classification"
 
     def test_file_route_with_instrument_product(self, client: APIClient):
-        uuid = "ab872770-9136-4e61-8958-31e62abdfb1b"
-        meta = client.file(uuid)
+        meta = client.file(PARSIVEL_UUID)
         assert meta.model is None
         assert isinstance(meta.instrument, Instrument)
         assert meta.instrument.instrument_id == "parsivel"
 
     def test_file_route_with_model_product(self, client: APIClient):
-        uuid = "277d54f0-d376-4448-a784-f1c8b819b46a"
-        meta = client.file(uuid)
+        meta = client.file(ECMWF_OPEN_UUID)
         assert meta.instrument is None
         assert isinstance(meta.model, Model)
         assert meta.model.id == "ecmwf-open"
 
     def test_versions_route(self, client: APIClient):
-        uuid = "8dcc865c-6920-49ce-a627-de045ec896e8"
-        meta = client.versions(uuid)
+        meta = client.versions(CLASSIFICATION_UUID)
         assert len(meta) == 1
         assert isinstance(meta[0], VersionMetadata)
-        assert str(meta[0].uuid) == uuid
+        assert str(meta[0].uuid) == CLASSIFICATION_UUID
 
     def test_product_option(self, client: APIClient):
         meta = client.files(site_id="hyytiala", product_id="iwc")
@@ -342,18 +348,16 @@ class TestProductFiles:
         assert len(meta) == 1
 
     def test_model_filter_on_l3_product(self, client: APIClient):
+        models = ("ecmwf", "era5-1-12", "era5-7-18")
         all_l3 = client.files(site_id="kenttarova", product_id="l3-cf")
-        assert len(all_l3) == 3
-        ecmwf = client.files(site_id="kenttarova", product_id="l3-cf", model_id="ecmwf")
-        assert len(ecmwf) == 1
-        assert ecmwf[0].model is not None
-        assert ecmwf[0].model.id == "ecmwf"
-        era5 = client.files(
-            site_id="kenttarova", product_id="l3-cf", model_id="era5-1-12"
-        )
-        assert len(era5) == 1
-        assert era5[0].model is not None
-        assert era5[0].model.id == "era5-1-12"
+        assert {m.model.id for m in all_l3 if m.model} == set(models)
+        for model_id in models:
+            meta = client.files(
+                site_id="kenttarova", product_id="l3-cf", model_id=model_id
+            )
+            assert len(meta) == 1
+            assert meta[0].model is not None
+            assert meta[0].model.id == model_id
         no_match = client.files(
             site_id="kenttarova", product_id="l3-cf", model_id="ecmwf-open"
         )
@@ -364,8 +368,7 @@ class TestProductFiles:
             client.files(site_id="invalid-site")
 
     def test_file_is_hashable(self, client: APIClient):
-        uuid = "8dcc865c-6920-49ce-a627-de045ec896e8"
-        meta = client.file(uuid)
+        meta = client.file(CLASSIFICATION_UUID)
         hash(meta)
 
 
@@ -381,13 +384,11 @@ class TestRawFiles:
         assert len(meta) == 1
 
     def test_filter_by_instrument_pid(self, client: APIClient):
-        pid = "https://hdl.handle.net/21.12132/3.77a75f3b32294855"
-        meta = client.raw_files(instrument_pid=pid)
+        meta = client.raw_files(instrument_pid=GRANADA_CHM15K_PID)
         assert len(meta) == 1
 
     def test_filter_by_instrument_pid_no_match(self, client: APIClient):
-        pid = "https://hdl.handle.net/21.12132/3.77a75f3b32294855"
-        meta = client.raw_files(instrument_pid=pid, date="2022-01-01")
+        meta = client.raw_files(instrument_pid=GRANADA_CHM15K_PID, date="2022-01-01")
         assert len(meta) == 0
 
     def test_filter_by_date_range_from(self, client: APIClient):
@@ -416,8 +417,7 @@ class TestRawFiles:
 
     def test_instrument_id_vs_pid_exclusivity(self, client: APIClient):
         meta1 = client.raw_files(instrument_id="chm15k")
-        pid = "https://hdl.handle.net/21.12132/3.c60c931fac9d43f0"
-        meta2 = client.raw_files(instrument_pid=pid)
+        meta2 = client.raw_files(instrument_pid=BUCHAREST_CHM15K_PID)
         assert len(meta1) > 1  # Multiple chm15k files
         assert len(meta2) == 1  # Specific PID
 
@@ -489,8 +489,7 @@ class TestDownloadingFunctionality:
         assert paths2[0].stat().st_size == original_size
 
     def test_downloading_single_metadata(self, client: APIClient, tmp_path: Path):
-        uuid = "ab872770-9136-4e61-8958-31e62abdfb1b"
-        meta = client.file(uuid)
+        meta = client.file(PARSIVEL_UUID)
         paths = client.download(meta, output_directory=tmp_path, progress=False)
         assert len(paths) == 1
         assert paths[0].exists()
