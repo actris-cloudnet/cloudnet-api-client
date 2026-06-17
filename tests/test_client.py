@@ -97,7 +97,7 @@ def files_product() -> list[File]:
     return [
         File("20250814_bucharest_classification.nc", volatile=True),
         File("20250808_hyytiala_iwc-Z-T-method.nc", volatile=False),
-        File("20140205_hyytiala_classification.nc", volatile=False),
+        File("20140205_hyytiala_classification.nc", volatile=False, legacy=True),
         File("20250821_limassol_parsivel_41582c49.nc", volatile=False),
         File("20250822_leipzig-lim_ecmwf-open.nc", volatile=True),
         File("20250711_kenttarova_l3-cf_ecmwf.nc", volatile=True, model="ecmwf"),
