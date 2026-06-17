@@ -35,8 +35,9 @@ class RawFile(NamedTuple):
 
 class File(NamedTuple):
     filename: str
-    legacy: bool
     volatile: bool
+    legacy: bool = False
+    model: str | None = None
 
 
 @pytest.fixture(scope="session")
@@ -84,11 +85,18 @@ def files_raw() -> list[RawFile]:
 @pytest.fixture(scope="session")
 def files_product() -> list[File]:
     return [
-        File("20250814_bucharest_classification.nc", legacy=False, volatile=True),
-        File("20250808_hyytiala_iwc-Z-T-method.nc", legacy=False, volatile=False),
-        File("20140205_hyytiala_classification.nc", legacy=True, volatile=False),
-        File("20250821_limassol_parsivel_41582c49.nc", legacy=False, volatile=False),
-        File("20250822_leipzig-lim_ecmwf-open.nc", legacy=False, volatile=True),
+        File("20250814_bucharest_classification.nc", volatile=True),
+        File("20250808_hyytiala_iwc-Z-T-method.nc", volatile=False),
+        File("20140205_hyytiala_classification.nc", volatile=False),
+        File("20250821_limassol_parsivel_41582c49.nc", volatile=False),
+        File("20250822_leipzig-lim_ecmwf-open.nc", volatile=True),
+        File("20250711_kenttarova_l3-cf_ecmwf.nc", volatile=True, model="ecmwf"),
+        File(
+            "20250711_kenttarova_l3-cf_era5-1-12.nc", volatile=True, model="era5-1-12"
+        ),
+        File(
+            "20250711_kenttarova_l3-cf_era5-7-18.nc", volatile=True, model="era5-7-18"
+        ),
     ]
 
 
@@ -333,6 +341,24 @@ class TestProductFiles:
         meta = client.files(instrument_id="parsivel")
         assert len(meta) == 1
 
+    def test_model_filter_on_l3_product(self, client: APIClient):
+        all_l3 = client.files(site_id="kenttarova", product_id="l3-cf")
+        assert len(all_l3) == 3
+        ecmwf = client.files(site_id="kenttarova", product_id="l3-cf", model_id="ecmwf")
+        assert len(ecmwf) == 1
+        assert ecmwf[0].model is not None
+        assert ecmwf[0].model.id == "ecmwf"
+        era5 = client.files(
+            site_id="kenttarova", product_id="l3-cf", model_id="era5-1-12"
+        )
+        assert len(era5) == 1
+        assert era5[0].model is not None
+        assert era5[0].model.id == "era5-1-12"
+        no_match = client.files(
+            site_id="kenttarova", product_id="l3-cf", model_id="ecmwf-open"
+        )
+        assert len(no_match) == 0
+
     def test_files_route_with_invalid_input(self, client: APIClient):
         with pytest.raises(CloudnetAPIError):
             client.files(site_id="invalid-site")
@@ -534,12 +560,15 @@ def _submit_product_file(backend_url: str, data_path: Path, meta: File):
             "volatile": meta.volatile,
             "legacy": meta.legacy,
             "uuid": str(UUID(nc.file_uuid)),
-            "pid": nc.pid,
+            "pid": getattr(nc, "pid", ""),
             "instrumentPid": getattr(nc, "instrument_pid", None),
             "s3key": None,
             **file_info,
         }
-        payload["model"] = product if payload["product"] == "model" else None
+        if payload["product"] == "model":
+            payload["model"] = product
+        else:
+            payload["model"] = meta.model
     url = f"{backend_url}/files/{meta.filename}"
     res = requests.put(url, json=payload)
     if res.status_code == 403:
