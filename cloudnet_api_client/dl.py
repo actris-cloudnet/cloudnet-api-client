@@ -1,3 +1,9 @@
+"""Download functionality for the Cloudnet API client.
+
+This module provides asynchronous download capabilities for fetching files
+from the Cloudnet data portal API.
+"""
+
 import asyncio
 import logging
 from collections.abc import Iterable
@@ -15,6 +21,16 @@ from cloudnet_api_client.containers import (
 
 
 class BarConfig:
+    """Configuration for download progress bars.
+
+    Attributes:
+        disable: Whether progress bars are disabled.
+        single_file: Whether only a single file is being downloaded.
+        position_queue: Queue for managing progress bar positions.
+        total_amount: The main progress bar for total download progress.
+        lock: Asyncio lock for thread-safe operations.
+    """
+
     def __init__(
         self,
         disable: bool | None,
@@ -22,6 +38,14 @@ class BarConfig:
         total_bytes: int,
         n_files: int,
     ) -> None:
+        """Initialize the BarConfig.
+
+        Args:
+            disable: Whether progress bars are disabled.
+            max_workers: Maximum number of concurrent workers.
+            total_bytes: Total number of bytes to download.
+            n_files: Number of files to download.
+        """
         self.disable = disable
         self.single_file = n_files <= 1
         self.position_queue = self._init_position_queue(max_workers)
@@ -39,6 +63,14 @@ class BarConfig:
         self.lock = asyncio.Lock()
 
     def _init_position_queue(self, max_workers: int) -> asyncio.Queue:
+        """Initialize the position queue for progress bars.
+
+        Args:
+            max_workers: Maximum number of concurrent workers.
+
+        Returns:
+            Asyncio queue with positions for progress bars.
+        """
         queue: asyncio.Queue = asyncio.Queue()
         start = 0 if self.single_file else 1
         for i in range(start, start + max_workers):
@@ -48,6 +80,17 @@ class BarConfig:
 
 @dataclass
 class DlParams:
+    """Parameters for a download task.
+
+    Attributes:
+        url: The URL to download from.
+        destination: The path where the file will be saved.
+        session: The aiohttp client session to use.
+        semaphore: The semaphore for limiting concurrency.
+        bar_config: The progress bar configuration.
+        disable: Whether progress bars are disabled.
+    """
+
     url: str
     destination: Path
     session: aiohttp.ClientSession
@@ -64,6 +107,22 @@ async def download_files(
     disable_progress: bool | None,
     validate_checksum: bool = False,
 ) -> list[Path]:
+    """Download multiple files asynchronously.
+
+    Args:
+        base_url: The base URL of the Cloudnet API.
+        metadata: Metadata object or iterable of metadata objects to download.
+        output_path: The directory where files will be saved.
+        concurrency_limit: Maximum number of concurrent downloads.
+        disable_progress: Whether to disable progress bars. If True, a simple
+            text progress indicator will be shown. If False, detailed progress
+            bars will be shown. If None, defaults to detailed progress bars for
+            multiple files.
+        validate_checksum: Whether to validate file checksums after download.
+
+    Returns:
+        List of Path objects pointing to the downloaded files.
+    """
     metas = list(metadata) if isinstance(metadata, Iterable) else [metadata]
     file_exists = _checksum_matches if validate_checksum else _size_and_name_matches
     semaphore = asyncio.Semaphore(concurrency_limit)
@@ -103,7 +162,15 @@ async def _download_file_with_retries(
     params: DlParams,
     max_retries: int = 3,
 ) -> None:
-    """Attempt to download a file, retrying up to max_retries times if needed."""
+    """Download a file with automatic retries on failure.
+
+    Args:
+        params: The download parameters.
+        max_retries: Maximum number of retry attempts. Defaults to 3.
+
+    Raises:
+        aiohttp.ClientError: If all retry attempts fail.
+    """
     position = await params.bar_config.position_queue.get()
     try:
         for attempt in range(1, max_retries + 1):
@@ -129,6 +196,16 @@ async def _download_file(
     params: DlParams,
     position: int,
 ) -> None:
+    """Download a single file to the specified destination.
+
+    Args:
+        params: The download parameters.
+        position: The position for the progress bar.
+
+    Raises:
+        aiohttp.ClientError: If the download fails.
+        Exception: If file operations fail.
+    """
     tmp_path = params.destination.with_suffix(f"{params.destination.suffix}.part")
     async with params.semaphore, params.session.get(params.url) as response:
         response.raise_for_status()
@@ -164,11 +241,29 @@ async def _download_file(
 
 
 def _checksum_matches(meta: Metadata, destination: Path) -> bool:
+    """Check if a downloaded file matches its expected checksum.
+
+    Args:
+        meta: The metadata for the file.
+        destination: The path to the downloaded file.
+
+    Returns:
+        True if the checksum matches, False otherwise.
+    """
     fun = utils.sha256sum if isinstance(meta, ProductMetadata) else utils.md5sum
     return fun(destination) == meta.checksum
 
 
 def _size_and_name_matches(meta: Metadata, destination: Path) -> bool:
+    """Check if a downloaded file matches its expected size and name.
+
+    Args:
+        meta: The metadata for the file.
+        destination: The path to the downloaded file.
+
+    Returns:
+        True if the size and name match, False otherwise.
+    """
     return (
         destination.stat().st_size == meta.size
         and destination.name == meta.download_url.split("/")[-1]

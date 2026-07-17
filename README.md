@@ -98,7 +98,7 @@ Both methods return a list of `dataclass` instances, `ProductMetadata` and `RawM
 
 ### `APIClient().filter(list[Metadata])` &rarr; `list[Metadata]`
 
-Additional filtering of fetched metadata.
+Additional filtering of fetched metadata which are not supported natively by the Cloudnet API.
 
 Parameters:
 
