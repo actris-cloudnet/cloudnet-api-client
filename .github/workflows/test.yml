@@ -2,30 +2,27 @@ name: Test and lint
 
 on: [push, pull_request]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     timeout-minutes: 5
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.14"]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Cache Python dependencies
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
-            ${{ runner.os }}-pip-
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Checkout fixtures
         uses: actions/checkout@v6
@@ -41,19 +38,14 @@ jobs:
           repository: actris-cloudnet/dataportal-fixtures
           path: dataportal-fixtures
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
       - name: Start dataportal
         run: docker compose -f .github/docker-compose.yml up -d --wait
 
       - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install .[dev,test]
+        run: pip install .[dev,test]
 
       - name: Run pre-commit checks
-        if: matrix.python-version == '3.13'
+        if: matrix.python-version == '3.14'
         run: pre-commit run --all-files --show-diff-on-failure
 
       - name: Run tests

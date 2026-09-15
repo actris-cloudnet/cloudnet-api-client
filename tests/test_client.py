@@ -148,6 +148,7 @@ class TestSites:
     def test_site_route(self, client: APIClient):
         site = client.site("bucharest")
         assert isinstance(site, Site)
+        assert site.labelling_status == "initially-accepted"
 
     def test_moving_site_mean_location(self, client: APIClient):
         location = client.moving_site_mean_location("boaty", "2022-01-01")
