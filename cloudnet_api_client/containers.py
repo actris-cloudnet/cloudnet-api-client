@@ -22,6 +22,9 @@ SITE_TYPE = Literal[
 ]
 """Literal type for site types in the Cloudnet API."""
 
+LABELLING_STATUS = Literal["planned", "initially-accepted", "labelled"]
+"""Literal type for ACTRIS labelling status of a site."""
+
 PRODUCT_TYPE = Literal["instrument", "geophysical", "evaluation", "model"]
 """Literal type for product types in the Cloudnet API."""
 
@@ -86,6 +89,7 @@ class Site:
         country_subdivision_code: The country subdivision code, if available.
         type: Set of site type classifications.
         gaw: The GAW identifier, if available.
+        labelling_status: The ACTRIS labelling status of the site, if available.
     """
 
     id: str
@@ -101,6 +105,7 @@ class Site:
     country_subdivision_code: str | None
     type: frozenset[SITE_TYPE]
     gaw: str | None
+    labelling_status: LABELLING_STATUS | None = None
 
 
 @dataclass(frozen=True, slots=True)
