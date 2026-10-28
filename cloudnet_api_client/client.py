@@ -306,12 +306,7 @@ class APIClient:
             >>> file_meta = client.file("405cc410-1f24-4ea9-bae8-da7f22be26cb")
         """
         file_res = self._get(f"files/{uuid}")[0]
-        if file_res.get("instrument") is not None:
-            instrument_uuid = file_res["instrument"]["uuid"]
-            instrument_res = self._get(f"instrument-pids/{instrument_uuid}")[0]
-        else:
-            instrument_res = None
-        obj = _build_meta_objects([file_res], instrument_res)[0]
+        obj = _build_meta_objects([file_res])[0]
         return ExtendedProductMetadata(
             **_asdict_shallow(obj),
             software=tuple(_build_objects(file_res["software"], Software)),

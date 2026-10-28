@@ -140,15 +140,11 @@ CONVERTED = {
 }
 
 
-def _build_meta_objects(
-    res: list[dict], instrument_meta: dict | None = None
-) -> list[ProductMetadata]:
+def _build_meta_objects(res: list[dict]) -> list[ProductMetadata]:
     """Build ProductMetadata objects from API response data.
 
     Args:
         res: List of dictionaries containing product file metadata from the API.
-        instrument_meta: Optional dictionary containing instrument metadata to use
-            instead of the instrument metadata in the response.
 
     Returns:
         List of ProductMetadata objects constructed from the response data.
@@ -162,8 +158,8 @@ def _build_meta_objects(
         ProductMetadata(
             **{_to_snake(k): v for k, v in obj.items() if _to_snake(k) in field_names},
             product=_build_object(obj["product"], Product),
-            instrument=_create_instrument_object(instrument_meta or obj["instrument"])
-            if instrument_meta or "instrument" in obj and obj["instrument"]
+            instrument=_create_instrument_object(obj["instrument"])
+            if "instrument" in obj and obj["instrument"]
             else None,
             model=_create_model_object(obj["model"])
             if "model" in obj and obj["model"]
