@@ -35,7 +35,9 @@ file = client.file("405cc410-1f24-4ea9-bae8-da7f22be26cb")
 files = client.files(site_id="hyytiala", date="2021-01-01", product_id=["mwr", "radar"])
 file_paths = client.download(files, "data/")
 
-raw_files = client.raw_files(site_id="granada", date="2024-01", instrument_id="parsivel")
+raw_files = client.raw_files(
+    site_id="granada", date="2024-01", instrument_id="parsivel"
+)
 file_paths = client.download(raw_files, "data_raw/")
 ```
 

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "cloudnet-api-client"
 authors = [
-  {name = "Simo Tukiainen", email = "simo.tukiainen@fmi.fi"},
+  { name = "Simo Tukiainen", email = "simo.tukiainen@fmi.fi" },
 ]
 description = "Cloudnet API client"
 readme = "README.md"
