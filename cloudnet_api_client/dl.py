@@ -23,6 +23,8 @@ from cloudnet_api_client.containers import (
     RawModelMetadata,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class BarConfig:
     """Configuration for download progress bars.
@@ -143,7 +145,7 @@ async def download_files(
             destination = output_path / meta.download_url.split("/")[-1]
             full_paths.append(destination)
             if destination.exists() and file_exists(meta, destination):
-                logging.debug(f"Already downloaded: {destination}")
+                logger.debug("Already downloaded: %s", destination)
                 continue
             dl_params = DlParams(
                 base_url=base_url,
@@ -201,11 +203,11 @@ async def _download_file_with_retries(
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 error = e
 
-            logging.warning(
+            logger.warning(
                 "Attempt %d failed for %s: %s", attempt, params.meta.filename, error
             )
             if attempt == max_retries:
-                logging.error(
+                logger.error(
                     "Giving up on %s after %d attempts.",
                     params.meta.filename,
                     max_retries,
