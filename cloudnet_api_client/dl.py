@@ -5,8 +5,10 @@ from the Cloudnet data portal API.
 """
 
 import asyncio
+import contextlib
+import hashlib
 import logging
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -17,6 +19,8 @@ from cloudnet_api_client import utils
 from cloudnet_api_client.containers import (
     Metadata,
     ProductMetadata,
+    RawMetadata,
+    RawModelMetadata,
 )
 
 
@@ -91,7 +95,8 @@ class DlParams:
         disable: Whether progress bars are disabled.
     """
 
-    url: str
+    base_url: str
+    meta: Metadata
     destination: Path
     session: aiohttp.ClientSession
     semaphore: asyncio.Semaphore
@@ -118,7 +123,8 @@ async def download_files(
             text progress indicator will be shown. If False, detailed progress
             bars will be shown. If None, defaults to detailed progress bars for
             multiple files.
-        validate_checksum: Whether to validate file checksums after download.
+        validate_checksum: Whether to validate file checksums or just file sizes
+            of existing files before download.
 
     Returns:
         List of Path objects pointing to the downloaded files.
@@ -132,14 +138,14 @@ async def download_files(
     async with aiohttp.ClientSession() as session:
         tasks = []
         for meta in metas:
-            download_url = f"{base_url}{meta.download_url.split('/api/')[-1]}"
             destination = output_path / meta.download_url.split("/")[-1]
             full_paths.append(destination)
             if destination.exists() and file_exists(meta, destination):
                 logging.debug(f"Already downloaded: {destination}")
                 continue
             dl_params = DlParams(
-                url=download_url,
+                base_url=base_url,
+                meta=meta,
                 destination=destination,
                 session=session,
                 semaphore=semaphore,
@@ -170,44 +176,72 @@ async def _download_file_with_retries(
 
     Raises:
         aiohttp.ClientError: If all retry attempts fail.
+        asyncio.TimeoutError: If all retry attempts timeout.
+        utils.InvalidChecksumError: If all retry attempts have invalid checksum.
     """
     position = await params.bar_config.position_queue.get()
+    tmp_path = params.destination.with_suffix(f"{params.destination.suffix}.part")
+    download_ok = False
     try:
         for attempt in range(1, max_retries + 1):
             try:
-                await _download_file(params, position)
+                await _download_file(params, position, tmp_path)
+                download_ok = True
                 return
-            except aiohttp.ClientError as e:
-                logging.warning(f"Attempt {attempt} failed for {params.url}: {e}")
-                if attempt == max_retries:
-                    logging.error(
-                        f"Giving up on {params.url} after {max_retries} attempts."
-                    )
-                    raise e
-                else:
-                    # Exponential backoff before retrying
-                    await asyncio.sleep(2**attempt)
+            except utils.InvalidChecksumError as e:
+                params.meta = await _refresh_meta(params)
+                # No error if the downloaded file matches the refreshed
+                # metadata.
+                if params.meta.checksum == e.checksum:
+                    download_ok = True
+                    return
+                error: Exception = e
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                error = e
+
+            logging.warning(
+                "Attempt %d failed for %s: %s", attempt, params.meta.filename, error
+            )
+            if attempt == max_retries:
+                logging.error(
+                    "Giving up on %s after %d attempts.",
+                    params.meta.filename,
+                    max_retries,
+                )
+                raise error
+            else:
+                # Exponential backoff before retrying
+                await asyncio.sleep(2**attempt)
     finally:
+        if download_ok:
+            tmp_path.replace(params.destination)
+        else:
+            with contextlib.suppress(OSError):
+                tmp_path.unlink(missing_ok=True)
         params.bar_config.position_queue.put_nowait(position)
-    raise RuntimeError("Unreachable code reached.")
 
 
 async def _download_file(
     params: DlParams,
     position: int,
+    tmp_path: Path,
 ) -> None:
     """Download a single file to the specified destination.
 
     Args:
         params: The download parameters.
         position: The position for the progress bar.
+        tmp_path: Temporary file for the download.
 
     Raises:
         aiohttp.ClientError: If the download fails.
         Exception: If file operations fail.
     """
-    tmp_path = params.destination.with_suffix(f"{params.destination.suffix}.part")
-    async with params.semaphore, params.session.get(params.url) as response:
+    download_url = f"{params.base_url}{params.meta.download_url.split('/api/')[-1]}"
+    hasher = (
+        hashlib.sha256() if isinstance(params.meta, ProductMetadata) else hashlib.md5()
+    )
+    async with params.semaphore, params.session.get(download_url) as response:
         response.raise_for_status()
         bar = tqdm(
             desc=params.destination.name,
@@ -225,19 +259,35 @@ async def _download_file(
             with tmp_path.open("wb") as f:
                 async for chunk in response.content.iter_chunked(8192):
                     f.write(chunk)
+                    hasher.update(chunk)
                     bar.update(len(chunk))
                     params.bar_config.total_amount.update(len(chunk))
-            tmp_path.replace(params.destination)
-        except Exception:
-            try:
-                if tmp_path.exists():
-                    tmp_path.unlink()
-            except OSError:
-                pass
-            raise
         finally:
             bar.close()
             bar.clear()
+    checksum = hasher.hexdigest()
+    if checksum != params.meta.checksum:
+        raise utils.InvalidChecksumError(checksum, params.meta)
+
+
+async def _refresh_meta(params: DlParams) -> Metadata:
+    if isinstance(params.meta, ProductMetadata):
+        endpoint = "files"
+        builder: Callable = utils._build_meta_objects
+    elif isinstance(params.meta, RawMetadata):
+        endpoint = "raw-files"
+        builder = utils._build_raw_meta_objects
+    elif isinstance(params.meta, RawModelMetadata):
+        endpoint = "raw-model-files"
+        builder = utils._build_raw_model_meta_objects
+    else:
+        msg = "Invalid metadata"
+        raise ValueError(msg)
+    url = f"{params.base_url}{endpoint}/{params.meta.uuid}"
+    async with params.session.get(url) as res:
+        res.raise_for_status()
+        obj = await res.json()
+        return builder([obj])[0]
 
 
 def _checksum_matches(meta: Metadata, destination: Path) -> bool:

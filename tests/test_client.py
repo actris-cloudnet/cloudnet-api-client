@@ -1,3 +1,4 @@
+import dataclasses
 import datetime
 import os
 from pathlib import Path
@@ -43,6 +44,13 @@ class RawFile(NamedTuple):
     pid: str
 
 
+class RawModelFile(NamedTuple):
+    filename: str
+    site: str
+    model: str
+    date: str
+
+
 class File(NamedTuple):
     filename: str
     volatile: bool
@@ -66,7 +74,7 @@ def data_path() -> Path:
 
 
 @pytest.fixture(scope="session")
-def files_raw() -> list[RawFile]:
+def files_raw() -> list[RawFile | RawModelFile]:
     return [
         RawFile(
             filename="20250801_Magurele_CHM170137_000.nc",
@@ -88,6 +96,12 @@ def files_raw() -> list[RawFile]:
             instrument="weather-station",
             date="2025-08-01",
             pid=JUELICH_WST_PID,
+        ),
+        RawModelFile(
+            filename="20250822_leipzig-lim_ecmwf-open.nc",
+            site="leipzig-lim",
+            model="ecmwf-open",
+            date="2025-08-22",
         ),
     ]
 
@@ -435,6 +449,10 @@ class TestRawFiles:
         for m in meta:
             hash(m)
 
+    def test_raw_model_files(self, client: APIClient):
+        meta = client.raw_model_files(site_id="leipzig-lim")
+        assert len(meta) == 1
+
 
 class TestDateParameterHandling:
     """Test various date parameter formats and edge cases."""
@@ -509,6 +527,49 @@ class TestDownloadingFunctionality:
         for path in paths:
             assert path.exists()
 
+    def test_download_with_invalid_checksum_product(
+        self, client: APIClient, tmp_path: Path
+    ):
+        valid_meta = client.file(CLASSIFICATION_UUID)
+        invalid_meta_dict = dataclasses.asdict(valid_meta)
+        invalid_meta_dict["checksum"] = "a" * 64  # Invalid SHA256
+        invalid_meta = type(valid_meta)(**invalid_meta_dict)
+        paths = client.download(invalid_meta, output_directory=tmp_path, progress=False)
+        assert len(paths) == 1
+        assert paths[0].exists()
+        assert sha256sum(paths[0]) == valid_meta.checksum
+
+    def test_download_with_invalid_checksum_raw_file(
+        self, client: APIClient, tmp_path: Path
+    ):
+        meta = client.raw_files(date="2025-08-01", site_id="bucharest")
+        assert len(meta) == 1
+        valid_meta = meta[0]
+        invalid_meta_dict = dataclasses.asdict(valid_meta)
+        invalid_meta_dict["checksum"] = "a" * 32  # Invalid MD5
+        invalid_meta = type(valid_meta)(**invalid_meta_dict)
+        paths = client.download(invalid_meta, output_directory=tmp_path, progress=False)
+        assert len(paths) == 1
+        assert paths[0].exists()
+        assert md5sum(paths[0]) == valid_meta.checksum
+
+    def test_download_with_invalid_checksum_raw_model_file(
+        self, client: APIClient, tmp_path: Path
+    ):
+        meta = client.raw_model_files(
+            site_id="leipzig-lim",
+            model_id="ecmwf-open",
+            date="2025-08-22",
+        )
+        valid_meta = meta[0]
+        invalid_meta_dict = dataclasses.asdict(valid_meta)
+        invalid_meta_dict["checksum"] = "a" * 32  # Invalid MD5
+        invalid_meta = type(valid_meta)(**invalid_meta_dict)
+        paths = client.download(invalid_meta, output_directory=tmp_path, progress=False)
+        assert len(paths) == 1
+        assert paths[0].exists()
+        assert md5sum(paths[0]) == valid_meta.checksum
+
 
 class TestFilterCombinations:
     def test_multiple_filters_combined(self, client: APIClient):
@@ -576,7 +637,7 @@ def _submit_product_file(backend_url: str, data_path: Path, meta: File):
     res.raise_for_status()
 
 
-def _submit_raw_file(backend_url: str, data_path: Path, meta: RawFile):
+def _submit_raw_file(backend_url: str, data_path: Path, meta: RawFile | RawModelFile):
     auth = ("admin", "admin")
     file_path = data_path / meta.filename
     checksum = md5sum(file_path)
@@ -584,14 +645,24 @@ def _submit_raw_file(backend_url: str, data_path: Path, meta: RawFile):
         "filename": meta.filename,
         "checksum": checksum,
         "site": meta.site,
-        "instrument": meta.instrument,
         "measurementDate": meta.date,
-        "instrumentPid": meta.pid,
     }
-    res = requests.post(f"{backend_url}/upload/metadata/", json=metadata, auth=auth)
+    if isinstance(meta, RawFile):
+        endpoint = "upload"
+        metadata["instrument"] = meta.instrument
+        metadata["instrumentPid"] = meta.pid
+    elif isinstance(meta, RawModelFile):
+        endpoint = "model-upload"
+        metadata["model"] = meta.model
+    else:
+        msg = "Invalid meta"
+        raise ValueError(msg)
+    res = requests.post(f"{backend_url}/{endpoint}/metadata/", json=metadata, auth=auth)
     if res.status_code == 409:
         return
     res.raise_for_status()
     with open(file_path, "rb") as f:
-        res = requests.put(f"{backend_url}/upload/data/{checksum}", data=f, auth=auth)
+        res = requests.put(
+            f"{backend_url}/{endpoint}/data/{checksum}", data=f, auth=auth
+        )
         res.raise_for_status()
