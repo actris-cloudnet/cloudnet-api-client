@@ -40,6 +40,8 @@ DateParam = str | datetime.date | None
 DateTimeParam = str | datetime.datetime | datetime.date | None
 QueryParam: TypeAlias = T | Iterable[T] | None
 
+USER_AGENT = f"cloudnet-api-client/{__version__} ({platform()})"
+
 
 class CloudnetAPIError(Exception):
     """Exception raised for errors from the Cloudnet API.
@@ -352,9 +354,7 @@ def _make_session() -> requests.Session:
         Configured requests.Session object.
     """
     session = requests.Session()
-    session.headers.update(
-        {"User-Agent": f"cloudnet-api-client/{__version__} ({platform()})"}
-    )
+    session.headers.update({"User-Agent": USER_AGENT})
     retry_strategy = Retry(total=10, backoff_factor=0.1, status_forcelist=[524])
     adapter = HTTPAdapter(max_retries=retry_strategy)
     session.mount("https://", adapter)

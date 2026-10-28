@@ -135,7 +135,9 @@ async def download_files(
     total_bytes = sum(meta.size for meta in metas)
     bar_config = BarConfig(disable_progress, concurrency_limit, total_bytes, len(metas))
     full_paths = []
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(
+        headers={"User-Agent": utils.USER_AGENT}
+    ) as session:
         tasks = []
         for meta in metas:
             destination = output_path / meta.download_url.split("/")[-1]
